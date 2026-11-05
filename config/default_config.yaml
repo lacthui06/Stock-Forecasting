@@ -1,0 +1,37 @@
+# Stock Price Forecasting Configuration
+
+data:
+  ticker: "FPT.VN"
+  period: "5y"
+  interval: "1d"
+  target_col: "Close"
+  cache_dir: "data/raw"
+  lookback: 60
+  horizon: 5
+  train_ratio: 0.70
+  val_ratio: 0.15
+  test_ratio: 0.15
+
+training:
+  batch_size: 32
+  epochs: 50
+  learning_rate: 0.001
+  early_stopping_patience: 10
+  random_seed: 42
+  device: "auto"
+
+models:
+  lstm:
+    hidden_dim: 64
+    num_layers: 2
+    dropout: 0.2
+  cnn:
+    filters: [64, 32]
+    kernel_size: 3
+    dropout: 0.2
+  arima:
+    order: [5, 1, 0]
+
+outputs:
+  runs_dir: "outputs/runs"
+  published_dir: "outputs/published"

@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+venv/
+.env/
+env/
+
+# IDE
+.vscode/
+.idea/
+
+# Data & Large Artifacts
+data/raw/*.csv
+data/processed/*.csv
+outputs/runs/*
+!outputs/runs/.gitkeep
+!outputs/published/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
