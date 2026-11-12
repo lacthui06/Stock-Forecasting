@@ -84,9 +84,26 @@ Theo quy chuẩn chống rò rỉ dữ liệu tại [docs/dl_data.md](docs/dl_da
 
 ### 2.3. Kiến trúc mô hình chi tiết
 - **Baseline 1 (Linear Regression)**: Đa biến đầu vào 60 điểm giá trượt dự báo 5 bước độc lập.
-- **Baseline 2 (ARIMA)**: Mô hình chuỗi thời gian thống kê cổ điển $ARIMA(p, d, q)$.
+- **Baseline 2 (ARIMA)**: Chọn phương án A: `ARIMA(order=(5,1,0), trend="n")`, fit trên toàn bộ Training Set. Khi rolling-origin, chỉ thêm quan sát đã xuất hiện bằng `append(refit=False)`, không ước lượng lại tham số bằng Validation/Test. Không hội tụ: ghi trạng thái fit thất bại và nguyên nhân, không báo metrics như một lần fit thành công hoặc tự thay order.
 - **Vanilla LSTM**: 2 tầng LSTM (`hidden_dim=64`, `dropout=0.2`) kết nối Fully-Connected Layer chiếu về 5 bước.
 - **1D-CNN**: 2 tầng Conv1d (`kernel_size=3`), Batch Normalization, ReLU, MaxPool1d, AdaptiveAvgPool1d chiếu về 5 bước.
+
+> **Xuân Thường bổ sung/chỉnh sửa — 2026-11-13:** Xác nhận thiết kế CNN chi tiết dưới đây và baseline ARIMA phương án A. Đây là quyết định thiết kế, chưa phải kiến trúc đã triển khai hoặc kết quả thực nghiệm đã kiểm chứng.
+
+CNN nhận tensor `(B,60,1)` và chuyển trục nội bộ thành `(B,1,60)`. Với `C` là số kênh convolution đầu, cấu trúc đã duyệt:
+
+```text
+Input (B,1,60)
+-> Conv1d(1,C,kernel_size=3,padding=1)
+-> BatchNorm1d(C) -> ReLU -> MaxPool1d(kernel_size=2)
+-> Conv1d(C,C//2,kernel_size=3,padding=1)
+-> BatchNorm1d(C//2) -> ReLU
+-> AdaptiveAvgPool1d(output_size=1) -> Flatten
+-> Dropout(p=0.2) -> Linear(C//2,H)
+-> Output (B,H)
+```
+
+`H=1` cho model single-step, `H=5` cho model Direct multi-output. Recursive dùng model `H=1` lặp 5 lần. Cấu hình cơ sở `C=64` tương ứng filters `[64,32]`; Optuna chọn `C` trong `{32,64,128}`, tương ứng `[32,16]`, `[64,32]`, `[128,64]`. Không diễn giải các lựa chọn này là cấu hình tối ưu trước thực nghiệm.
 
 ### 2.4. Quy trình huấn luyện & Tối ưu
 Theo quy chuẩn tại [docs/dl_training.md](docs/dl_training.md):
