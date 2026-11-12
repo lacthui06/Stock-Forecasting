@@ -21,6 +21,11 @@ Task arrives
     ├── New project/feature/change? ──→ spec-driven-development
     ├── No quality bar written down? ──→ constraint-driven-development
     ├── Have a spec, need tasks? ──────→ planning-and-task-breakdown
+    ├── Machine Learning / Time-Series work? ──→ time-series-dl-pipeline
+    │   ├── EDA & Stationarity/ACF/PACF? ──────→ time-series-dl-pipeline (docs/time_series.md)
+    │   ├── Dataset, Sliding Window & Scaling? ─→ time-series-dl-pipeline (docs/dl_data.md)
+    │   ├── Deep Learning Model & Training? ────→ time-series-dl-pipeline (docs/dl_training.md)
+    │   └── Multi-step Evaluation & Metrics? ───→ time-series-dl-pipeline (docs/dl_flow.md)
     ├── Implementing code? ────────────→ incremental-implementation
     │   ├── UI work? ─────────────────→ frontend-ui-engineering
     │   ├── API work? ────────────────→ api-and-interface-design

@@ -1,6 +1,6 @@
 # Dự án Dự đoán Giá Cổ phiếu Đa bước (Multi-step Stock Price Forecasting) với LSTM và CNN
 
-> **Mã cổ phiếu thực nghiệm chính**: `FPT.VN` (Tập đoàn FPT - Sàn HOSE)  
+> **Mã cổ phiếu thực nghiệm chính**: `NVDA` (NVIDIA Corporation - Sàn NASDAQ)  
 > **Bài toán**: Hồi quy chuỗi thời gian đa bước (Multi-step Time-series Regression, $k = 5$ ngày) với cửa sổ quan sát (Lookback window, $L = 60$ ngày).  
 > **Mô hình**: Baseline (Linear Regression, ARIMA) vs Deep Learning (Vanilla LSTM, 1D-CNN).
 
@@ -16,7 +16,9 @@ Stock-Forecasting/
 │   │   ├── pre_commit.md                   # Checklist kiểm tra trước khi commit code
 │   │   └── pre_submission.md               # Checklist nghiệm thu bài toán hồi quy
 │   ├── skills/                             # 25 bộ kỹ năng kỹ thuật phần mềm (TDD, EDA, Review...)
-│   └── templates/                          # Biểu mẫu báo cáo walkthrough và README chuẩn
+│   └── templates/                          # Biểu mẫu báo cáo walkthrough, slide thuyết trình, README
+│       ├── slide_define_design_template.md # Template slide trình bày phần bài toán và thiết kế
+│       └── walkthrough_template.md         # Template báo cáo thực nghiệm sống
 │
 ├── config/                                 # Cấu hình tập trung cho toàn bộ pipeline
 │   └── default_config.yaml                 # Tham số dữ liệu, mô hình, siêu tham số huấn luyện
@@ -24,6 +26,12 @@ Stock-Forecasting/
 ├── data/                                   # Dữ liệu chuỗi thời gian (loại trừ khỏi Git)
 │   ├── raw/                                # Dữ liệu nến ngày gốc tải từ Yahoo Finance (CSV cache)
 │   └── processed/                          # Dữ liệu sau chuẩn hóa (MinMaxScaler) và tạo window
+│
+├── docs/                                   # Sổ tay hướng dẫn chuyên sâu (Time-series, DL training, EDA)
+│   ├── time_series.md                      # Hướng dẫn phân tích chuỗi thời gian & kiểm định dừng
+│   ├── dl_flow.md                          # Kiến trúc luồng học sâu tổng quan
+│   ├── dl_training.md                      # Quy trình huấn luyện PyTorch, loss, optimizer, scheduler
+│   └── dl_data.md                          # Tiền xử lý, Custom Dataset & chống rò rỉ dữ liệu
 │
 ├── notebooks/                              # Jupyter Notebooks phục vụ EDA và phân tích nhanh
 │
@@ -72,11 +80,14 @@ Bạn có thể giữ **Ctrl + Click** vào tên tệp bên dưới để mở t
 | [walkthrough.md](./walkthrough.md) | **Tài liệu sống (Living Doc)** | Nguồn báo cáo duy nhất ghi nhận đặc tả, phương pháp, bảng số liệu thực nghiệm và đồ thị. |
 | [DESCRIPTION.md](./DESCRIPTION.md) | **Đăng ký đề tài** | Phiếu mô tả mục tiêu, đối tượng sử dụng, dữ liệu và timeline 3 tuần. |
 | [AGENTS.md](./AGENTS.md) | **Quy chuẩn Agent** | Bộ luật bắt buộc cho Agent: cấm rò rỉ dữ liệu (No Data Leakage), cấm bịa số liệu. |
-| [config/default_config.yaml](./config/default_config.yaml) | **Cấu hình** | Quản lý tập trung thông số `ticker: FPT.VN`, `lookback: 60`, `horizon: 5`, batch size, learning rate. |
+| [config/default_config.yaml](./config/default_config.yaml) | **Cấu hình** | Quản lý tập trung thông số `ticker: NVDA`, `lookback: 60`, `horizon: 5`, batch size, learning rate. |
 | [requirements.txt](./requirements.txt) | **Môi trường** | Định nghĩa phiên bản thư viện cần thiết (`torch`, `yfinance`, `statsmodels`...). |
 | [.agents/checklists/new_lab_bootstrap.md](.agents/checklists/new_lab_bootstrap.md) | **Checklist** | Tiêu chuẩn dựng khung dự án ngay từ đầu. |
 | [.agents/checklists/pre_commit.md](.agents/checklists/pre_commit.md) | **Checklist** | Tiêu chuẩn rà soát code và tests trước khi commit. |
 | [.agents/checklists/pre_submission.md](.agents/checklists/pre_submission.md) | **Checklist** | Tiêu chuẩn kiểm toán số liệu và nghiệm thu trước khi nộp đề tài. |
+| [.agents/templates/slide_define_design_template.md](.agents/templates/slide_define_design_template.md) | **Template Slide** | Khung slide 10 trang chuẩn (Marp/PowerPoint) cho phần định nghĩa bài toán & thiết kế hệ thống. |
+| [.agents/skills/time-series-dl-pipeline/SKILL.md](.agents/skills/time-series-dl-pipeline/SKILL.md) | **Skill chuyên sâu** | Hướng dẫn Agent triển khai trọn vẹn pipeline chuỗi thời gian & PyTorch DL. |
+| [docs/time_series.md](docs/time_series.md) | **Sổ tay kỹ thuật** | Lộ trình phân tích chuỗi thời gian, phân rã, kiểm định dừng ADF và ACF/PACF. |
 
 ---
 
@@ -85,7 +96,7 @@ Bạn có thể giữ **Ctrl + Click** vào tên tệp bên dưới để mở t
 ```mermaid
 flowchart TD
     A["Yahoo Finance API (yfinance)"] -->|"Tải nến OHLCV (5 năm)"| B["src/data/data_loader.py"]
-    B -->|"Lưu cache CSV"| C[("data/raw/FPT_VN_5y.csv")]
+    B -->|"Lưu cache CSV"| C[("data/raw/NVDA_5y.csv")]
     C --> D["src/data/dataset.py"]
     
     subgraph Data_Processing["Tiền xử lý & Chống rò rỉ dữ liệu (No Leakage)"]

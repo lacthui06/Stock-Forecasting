@@ -1,15 +1,15 @@
 # **Mẫu đăng ký đề tài**
-1. Tên đề tài: Nghiên cứu và Xây dựng Mô hình Học sâu Dự đoán Giá Cổ phiếu Đa bước (Multi-step Stock Price Forecasting) với LSTM và CNN: Thực nghiệm trên Cổ phiếu FPT (`FPT.VN`).
+1. Tên đề tài: Nghiên cứu và Xây dựng Mô hình Học sâu Dự đoán Giá Cổ phiếu Đa bước (Multi-step Stock Price Forecasting) với LSTM và CNN: Thực nghiệm trên Cổ phiếu NVIDIA (`NVDA`).
 2. Hướng chính: AI dự đoán chuỗi thời gian (Time-series Forecasting).
 3. Người sử dụng và vấn đề:
    - **Người sử dụng**: Nhà đầu tư cá nhân, chuyên viên phân tích kỹ thuật và định lượng (Quant Analyst).
-   - **Vấn đề khó khăn**: Biến động giá cổ phiếu mang tính phi tuyến cao; các mô hình thống kê truyền thống khó bắt trọn các phụ thuộc dài hạn; dự đoán đơn bước (single-step: ngày mai) chưa đủ cơ sở để xây dựng kế hoạch quản trị rủi ro hoặc giao dịch ngắn hạn theo tuần.
+   - **Vấn đề khó khăn**: Biến động giá cổ phiếu công nghệ (đặc biệt là làn sóng bán dẫn/AI của NVIDIA) mang tính phi tuyến cực cao với các đợt bùng nổ xu hướng và biến động mạnh; các mô hình thống kê truyền thống khó bắt trọn các phụ thuộc phi tuyến dài hạn; dự đoán đơn bước (single-step: ngày mai) chưa đủ cơ sở để xây dựng kế hoạch quản trị rủi ro hoặc giao dịch ngắn hạn theo tuần.
 4. Mục tiêu: Dự đoán giá đóng cửa (`Close`) đa bước trong $k = 5$ ngày giao dịch tiếp theo dựa trên chuỗi dữ liệu lịch sử (Lookback window mặc định 60 ngày, có khả năng cấu hình mở rộng 90/120 ngày).
 5. Dữ liệu:
    - **Nguồn**: [Yahoo Finance via `yfinance`](https://pypi.org/project/yfinance/).
-   - **Mã cổ phiếu chính**: `FPT.VN` (Công ty Cổ phần FPT - sàn HOSE); hệ thống hỗ trợ cấu hình tải bất kỳ mã cổ phiếu nào khác.
+   - **Mã cổ phiếu chính**: `NVDA` (NVIDIA Corporation - Sàn NASDAQ); hệ thống hỗ trợ cấu hình tải bất kỳ mã cổ phiếu nào khác.
    - **Trường dữ liệu**: Open, High, Low, Close, Adj Close, Volume (nến ngày `1d`).
-   - **Quy mô dự kiến**: Dữ liệu lịch sử 5 năm gần nhất.
+   - **Quy mô dự kiến**: Dữ liệu lịch sử 5 năm gần nhất (USD).
    - **Quyền sử dụng & Dự phòng**: Dữ liệu công khai, lưu bản cache cục bộ (CSV) để dự phòng ngắt kết nối mạng hoặc rate-limit.
 6. Phạm vi:
    - Bài toán hồi quy đa bước (Multi-step Time-series Regression, $k=5$).

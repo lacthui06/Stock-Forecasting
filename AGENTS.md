@@ -15,7 +15,7 @@ Dự án này tuân theo quy chuẩn kỹ thuật phần mềm và nghiên cứu
 
 ## 3. Quy ước định dạng bài toán (Regression Context)
 - **Target**: Giá đóng cửa (`Close`).
-- **Mã cổ phiếu chính**: `FPT.VN`.
+- **Mã cổ phiếu chính**: `NVDA` (NVIDIA Corporation - Sàn NASDAQ).
 - **Lookback Window**: Mặc định 60 ngày (có thể tùy biến qua config).
 - **Forecast Horizon**: $k = 5$ ngày (đa bước).
 - **Metrics chuẩn**: RMSE, MAE, MAPE (%), $R^2$ Score, Directional Accuracy (%).
@@ -23,3 +23,9 @@ Dự án này tuân theo quy chuẩn kỹ thuật phần mềm và nghiên cứu
   - Actual vs Predicted Multi-step curves.
   - Residual Error Distribution.
   - Training & Validation Loss curves.
+
+## 4. Tài liệu tham chiếu kỹ thuật (Technical References)
+- Pipeline học sâu & chuỗi thời gian: [.agents/skills/time-series-dl-pipeline/SKILL.md](.agents/skills/time-series-dl-pipeline/SKILL.md).
+- Quy trình EDA & kiểm định dừng: [docs/time_series.md](docs/time_series.md).
+- Quy chuẩn vòng lặp huấn luyện PyTorch: [docs/dl_training.md](docs/dl_training.md) và [docs/dl_flow.md](docs/dl_flow.md).
+- Tiền xử lý dữ liệu và Custom Dataset: [docs/dl_data.md](docs/dl_data.md).
