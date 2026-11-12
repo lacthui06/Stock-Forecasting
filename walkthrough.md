@@ -27,11 +27,12 @@ Tài liệu sống duy nhất của dự án. Viết bằng văn phong học thu
   - Kiểu dữ liệu: `torch.float32`.
 
 ### 1.2. Pipeline Execution Roadmap
-- Thu thập & Lưu cache: [data_loader.py](src/data/data_loader.py) -> Lưu trữ tại `data/raw/NVDA_5y.csv`.
-- Tiền xử lý & Tạo chuỗi trượt: [dataset.py](src/data/dataset.py) -> Sinh PyTorch `DataLoader`.
-- Xây dựng mô hình Baseline: [baseline_lr.py](src/models/baseline_lr.py) & [baseline_arima.py](src/models/baseline_arima.py).
-- Xây dựng mô hình Học sâu: [lstm_model.py](src/models/lstm_model.py) & [cnn_model.py](src/models/cnn_model.py).
-- Huấn luyện & Đánh giá: [train.py](scripts/train.py) & [eval.py](scripts/eval.py).
+Các đường dẫn module dưới đây là dự kiến, chưa tồn tại trong repo.
+- Thu thập & Lưu cache: `data_loader.py` -> Lưu trữ tại `data/raw/NVDA_5y.csv`.
+- Tiền xử lý & Tạo chuỗi trượt: `dataset.py` -> Sinh PyTorch `DataLoader`.
+- Xây dựng mô hình Baseline: `baseline_lr.py` & `baseline_arima.py`.
+- Xây dựng mô hình Học sâu: `lstm_model.py` & `cnn_model.py`.
+- Huấn luyện & Đánh giá: `train.py` & `eval.py`.
 
 ### 1.3. Thiết kế so sánh và tiêu chí đánh giá
 - **Câu hỏi thực nghiệm**:
@@ -43,6 +44,24 @@ Tài liệu sống duy nhất của dự án. Viết bằng văn phong học thu
   - MAPE (Mean Absolute Percentage Error): Sai số tỷ lệ phần trăm (%).
   - $R^2$ Score: Hệ số xác định mức độ giải thích phương sai của mô hình.
   - Directional Accuracy (%): Tỷ lệ dự đoán đúng xu hướng giá tăng/giảm so với ngày $t$.
+
+---
+
+### 1.4. Hợp đồng thiết kế và tiêu chí nghiệm thu đề xuất
+
+Trạng thái: repository hiện có khung thư mục và cấu hình; các module, API và luồng dưới đây là thiết kế cần triển khai, chưa phải tính năng đã được kiểm chứng.
+
+- **Core features**: tải/cache NVDA, kiểm tra dữ liệu, dự báo Close 5 phiên từ 60 phiên lịch sử, so sánh LR/ARIMA/LSTM/CNN, xuất biểu đồ và metrics.
+- **Success criteria chức năng**: mỗi đầu vào hợp lệ trả đúng 5 giá trị hữu hạn theo đúng thứ tự phiên; từ chối đầu vào thiếu/không hợp lệ; có nguồn dữ liệu, ngày cutoff, model version và scaler đi kèm để tái lập.
+- **Success criteria nghiên cứu**: so sánh trên cùng forecast origins và Test độc lập; chỉ kết luận DL cải thiện khi MAE và RMSE tổng hợp thấp hơn baseline tốt nhất theo từng chỉ số; vẫn công bố kết quả từng horizon, MAPE, R², Directional Accuracy và thời gian huấn luyện. Nếu không đạt thì kết luận giả thuyết chưa được hỗ trợ, không sửa tiêu chí theo Test.
+- **Training**: cache/validate, chia thời gian 70/15/15, fit scaler trên Train, tạo windows với nhãn không vượt ranh giới tập, chọn bằng Validation, đánh giá Test sau khi chốt mô hình; lưu checkpoint, scaler, config và metrics theo run_id.
+- **Inference**: chỉ dùng 60 Close tại hoặc trước cutoff; tải đúng checkpoint/scaler đã lưu, không refit, eval + no_grad, inverse transform, gán 5 phiên hợp lệ theo lịch sàn; từ chối output không hữu hạn hoặc giá không hợp lệ.
+- **API nội bộ đề xuất**: `predict(close_history, model_bundle)` nhận chuỗi gồm date và Close, checkpoint cùng scaler/config; trả `as_of`, `model_version`, `forecasts[{date, close_usd}]`. Đây là Python interface; chưa có HTTP service. Các lỗi dự kiến: insufficient_history, invalid_data, artifact_mismatch, data_unavailable.
+- **Edge cases**: dưới 60 phiên; ngày trùng, sai thứ tự, NaN/Inf, giá không dương; cache cũ; ngày nghỉ; cổ phiếu chia tách; thiếu checkpoint hoặc scaler không tương thích. Không tự tạo dữ liệu tương lai hay âm thầm thay ticker/cách điều chỉnh giá.
+- **Security**: ticker whitelist, giới hạn độ dài đầu vào và đường dẫn artifact trong thư mục cho phép; chỉ nạp checkpoint tin cậy, không nhận pickle do người dùng tải lên; không ghi secrets vào repo/log. Xác thực và rate limit là điều kiện nếu mở HTTP service về sau.
+- **Performance**: cache dữ liệu, load model một lần, batch inference, eval/no_grad; đo latency p50/p95 trên phần cứng công bố và cùng điều kiện, không tuyên bố tốc độ khi chưa benchmark.
+- **Readability**: trách nhiệm module tách rõ, cấu hình tập trung, shape/type contract, lỗi có thông điệp rõ và kiểm thử các ranh giới dữ liệu.
+- **Milestones**: tuần 1 dữ liệu/split/scaler/baselines; tuần 2 LSTM/CNN và chọn bằng Validation; tuần 3 đánh giá Test, phân tích lỗi, demo và tái lập. Rủi ro chính: API lỗi/rate limit (cache có timestamp, retry giới hạn), leakage (test cutoff/window), overfit (early stopping), regime shift (phân tích lỗi theo giai đoạn).
 
 ---
 

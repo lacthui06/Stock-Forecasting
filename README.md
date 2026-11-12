@@ -8,6 +8,8 @@
 
 ## 1. Cấu trúc thư mục dự án (Project Directory Tree)
 
+**Trạng thái:** Cây dưới đây mô tả cấu trúc mục tiêu. Hiện repo mới có config, tài liệu, slide và khung src/tests; các module và script huấn luyện chưa được triển khai.
+
 ```text
 Stock-Forecasting/
 ├── .agents/                                # Quy chuẩn, kỹ năng và biểu mẫu tự động hóa
@@ -43,6 +45,10 @@ Stock-Forecasting/
 │   ├── train.py                            # Huấn luyện mô hình Deep Learning (LSTM, 1D-CNN)
 │   ├── eval.py                             # Đánh giá và so sánh mô hình với Baseline
 │   └── predict.py                          # Dự đoán giá 5 ngày tiếp theo từ dữ liệu mới nhất
+│
+├── report/                                 # Bản thuyết trình slide 5 phút (Define & Design Problem)
+│   ├── index.html                          # Slide HTML tương tác chạy trực tiếp trên trình duyệt
+│   └── problem_definition_5min.md          # Bản slide Markdown gọn nhẹ chuẩn Marp
 │
 ├── src/                                    # Thư viện mã nguồn module hóa tái sử dụng
 │   ├── data/                               # Phân hệ nạp dữ liệu và xử lý chuỗi trượt
@@ -86,12 +92,22 @@ Bạn có thể giữ **Ctrl + Click** vào tên tệp bên dưới để mở t
 | [.agents/checklists/pre_commit.md](.agents/checklists/pre_commit.md) | **Checklist** | Tiêu chuẩn rà soát code và tests trước khi commit. |
 | [.agents/checklists/pre_submission.md](.agents/checklists/pre_submission.md) | **Checklist** | Tiêu chuẩn kiểm toán số liệu và nghiệm thu trước khi nộp đề tài. |
 | [.agents/templates/slide_define_design_template.md](.agents/templates/slide_define_design_template.md) | **Template Slide** | Khung slide 10 trang chuẩn (Marp/PowerPoint) cho phần định nghĩa bài toán & thiết kế hệ thống. |
+| [report/index.html](./report/index.html) | **Slide 5 Phút (HTML)** | Bản thuyết trình HTML tương tác (chạy offline) mở trực tiếp bằng trình duyệt, có speaker notes. |
+| [report/problem_definition_5min.md](./report/problem_definition_5min.md) | **Slide 5 Phút (MD)** | Bản slide Markdown gọn nhẹ chuẩn Marp cho bài thuyết trình 5 phút. |
 | [.agents/skills/time-series-dl-pipeline/SKILL.md](.agents/skills/time-series-dl-pipeline/SKILL.md) | **Skill chuyên sâu** | Hướng dẫn Agent triển khai trọn vẹn pipeline chuỗi thời gian & PyTorch DL. |
 | [docs/time_series.md](docs/time_series.md) | **Sổ tay kỹ thuật** | Lộ trình phân tích chuỗi thời gian, phân rã, kiểm định dừng ADF và ACF/PACF. |
 
 ---
 
+### Trình chiếu Define & Design Problem (5 phút)
+
+Mở [report/index.html](./report/index.html) trực tiếp trong trình duyệt, không cần kết nối mạng. Bài gồm 10 slide với tổng thời lượng gợi ý 300 giây. Dùng phím mũi tên hoặc Space để chuyển slide, `N` bật/tắt lời nói gợi ý, `F` bật/tắt toàn màn hình. Bấm **Bắt đầu** để tập với đồng hồ; **Đặt lại** để tập lại. Khi thuyết trình cho khán giả, tắt phần ghi chú. Bấm **Đọc** để xem toàn bộ nội dung và cuộn trang. Các chấm ở thanh dưới dùng để chọn slide. Phím `R` chạy lại hiệu ứng của slide hiện tại; `M` bật/tắt chuyển động. Nút **Motion: ON/OFF** hiển thị trạng thái chuyển động; hệ thống tự tắt animation nếu trình duyệt đang bật Reduce Motion. Các sơ đồ chỉ minh họa thiết kế, không phải kết quả giá hay benchmark thực tế.
+
+Nội dung tập trung vào định nghĩa và thiết kế bài toán; các mô hình và tiêu chí đánh giá là kế hoạch nghiên cứu, chưa phải kết quả đã đạt. Báo cáo thực nghiệm chính tiếp tục được ghi trong [walkthrough.md](./walkthrough.md).
+
 ## 3. Luồng xử lý dữ liệu và huấn luyện (Pipeline Architecture)
+
+Sơ đồ sau là thiết kế dự kiến, chưa phải pipeline đã chạy được.
 
 ```mermaid
 flowchart TD
@@ -134,21 +150,9 @@ Dự án yêu cầu **Python $\ge 3.10$**:
 pip install -r requirements.txt
 ```
 
-### 4.2. Chạy kiểm thử tự động
-Xác thực tính toàn vẹn dữ liệu và tensor contract trước khi huấn luyện:
-```bash
-pytest tests/ -v
-```
+### 4.2. Trạng thái triển khai
 
-### 4.3. Huấn luyện mô hình
-```bash
-python scripts/train.py --config config/default_config.yaml
-```
-
-### 4.4. Đánh giá và so sánh mô hình
-```bash
-python scripts/eval.py --config config/default_config.yaml
-```
+Các script huấn luyện, đánh giá và dự đoán cùng bộ kiểm thử hiện chưa có; repo chỉ mới có tệp khởi tạo trong `src/` và `tests/`. Không thể chạy pipeline hoặc tái lập kết quả thực nghiệm ở thời điểm này. Xem [walkthrough.md](./walkthrough.md) để theo dõi thiết kế và kết quả khi được cập nhật.
 
 ---
 
