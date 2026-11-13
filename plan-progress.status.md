@@ -1,5 +1,38 @@
 # Plan Progress Tracking
 
+## Redesign visual10 slide / Be Vietnam Pro / LaTeX — 2026-11-13
+
+- Human duyệt plan10 slide mới: cover → data → formulation → preparation → model → system architecture → modules → experiment/evaluation → milestones/risks → conclusion. WHAT–WHY–WHO đưa vào cover/lời dẫn. Title: Stock Price Forecasting For Deep Learning; subtitle theo human, bài toán vẫn H5.
+- Đã đồng bộ `presentaition-HTML/presentation_10min.md`, `index.html`, `presentation.css`, `presentation.js`, `DESIGN_TOKENS.md`. Không sửa DEFINE/DESIGN/walkthrough, config hay code ML trong lượt này; các diff cũ giữ nguyên.
+- Layout mới dùng header/title/content/footer cùng tọa độ. Giảm paragraph/bullets, thay bằng data schema, timeline, pipeline/human gate, model lanes, architecture6 lớp, module/artifact contracts, study matrix, rolling-origin, work→deliverable và risk→mitigation.
+- Skill human chọn: System Design. Đã đọc SKILL/artifact-template.json, document capability và template-distill; xem preview và đọc heading hierarchy của reference.docx read-only. Human duyệt chuyển cách tổ chức sang HTML; không tạo DOCX, không claim fidelity với khổ trang DOCX. Reference không bị sửa.
+- Font Be Vietnam Pro400/600/700 lấy từ Google Fonts chính thức, kèm OFL. MathJax3.2.2 tex-svg bundle và Apache license lưu local. Hình cover SVG minh họa khái niệm do code tạo; không là price chart hoặc kết quả. Tổng assets khoảng2.4MB, không có request runtime CDN trong HTML.
+- Vòng kiểm chứng: patch → static self-review → browser localhost → rà ảnh cả10 slide → so nguồn DESIGN và Markdown. 10 slide, durations600s, scripts khớp notes, IDs không trùng, local paths tồn tại, 4 công thức LaTeX. Node syntax check và git diff --check đạt. Kiểm tra đầu tiên sai regex đếm LaTeX trong script QA; sửa phép kiểm tra và chạy lại đạt, không phải lỗi sản phẩm.
+- Browser1440×900: font family Be Vietnam Pro; 4 MathJax SVG, không math error. Rà10 ảnh: không chồng footer hoặc clipping; geometry các content không tràn ngang/dọc (cover làm tròn1px, không có child vượt khung). Console không warning/error ở lượt đọc log.
+- Reading mode320/390/768px: đủ slide, không tràn ngang; đã xem timeline/công thức mobile. Next/prev/select, notes đúng script, timer giảm9:53 rồi pause/reset10:00, motion off hoạt động. Reset viewport và giữ tab deliverable.
+- Preview cover và architecture lưu ngoài repo tại `/private/tmp/stock-forecasting-cover.png` và `/private/tmp/stock-forecasting-system-design.png` để human review. Không tạo script QA phụ trợ trong project.
+- Giới hạn: chưa đo thời gian nói, chưa kiểm thủ công native keyboard/fullscreen/print dialog hoặc chứng nhận accessibility; không chạy ML hoặc bịa results. Print stylesheet có khổ1280×720, cần preview in thật trước xuất chính thức. Chưa commit/push.
+
+## HTML presentation 10 slide sau human confirmation — 2026-11-13
+
+- Human duyệt soạn lại Markdown theo prompt mới ở đường dẫn cũ, sau đó xác nhận chỉnh HTML.
+- Tên mới: Multi-Step Stock Price Forecasting For Deep Learning (LSTM & 1D-CNN). Tiêu đề phụ: Dự báo giá cổ phiếu đa bước, thực nghiệm trên NVIDIA (NVDA).
+- Đã cập nhật `presentaition-HTML/index.html` theo 10 slide và speaker scripts của `presentation_10min.md`; tổng duration 600 giây, dropdown/folio 10 slide. CSS giữ palette đã chốt, bổ sung layout theo nội dung và cover tên dài. Không sửa source ML hoặc tài liệu yêu cầu.
+- Sửa xử lý Escape trong `presentation.js`: xét đóng notes trước guard bỏ qua phím từ button, để focus trên nút đóng không chặn Escape. Kiểm thử phím bằng công cụ trình duyệt chưa cho kết quả xác nhận; cần kiểm tra thủ công Escape/Arrow trước buổi trình bày, không ghi keyboard passed.
+- Self-review/static check: 10 slide, tổng 600 giây, option/ID hợp lệ, scripts khớp Markdown, HTML không còn tên cũ. `git diff --check` đạt.
+- Browser run localhost: cả 10 slide desktop không có content overflow dọc/chồng footer; xem cover và slide evaluation; console không ghi warning/error ở lượt đọc log. Next/dropdown và mở/đóng notes bằng nút hoạt động; timer giảm thời gian, pause/reset về 10:00 hoạt động. Reading mode 390px hiện đủ 10 slide, không tràn ngang. Viewport override đã reset.
+- Giới hạn: chưa xác minh bằng tương tác thực fullscreen/print/reduced-motion; chưa benchmark hoặc chạy ML. Các phím cần kiểm lại như trên. Chưa commit/push.
+- Các mục lịch sử bên dưới giữ trạng thái tại thời điểm ghi; dòng cũ nói 12 slide đã được thay bằng bản 10 slide trong mục này.
+
+## Đồng bộ presentation / spec sau human review - 2026-11-13
+
+- Human xác nhận trở lại 4 study x 10 trial, tối đa 40; không dùng cap 4 cấu hình/họ của prompt presentation. LSTM/CNN single và Direct-5; Recursive reuse single. Giữ 50 epoch/trial, patience 10.
+- Baseline Linear Regression + ARIMA A, không Naive trên slide chính. ARIMA (5,1,0), trend='n', fit toàn train, append actual đã có refit=False; nonconvergence FAIL.
+- Đồng bộ DEFINE pipeline: minimal validation -> fixed split trước EDA -> EDA train/human review -> cleaning giữ ngày biên -> scaler train-only -> windows. Sau drop chỉ tái đếm, không phân chia lại để bù.
+- Metrics đã duyệt: MSELoss/validation MSE scaled cho training/selection; MAE/RMSE USD chính trên slide; báo cáo đủ MAE/RMSE/MAPE/R²/DA; artifact chi tiết thêm MSE USD² từng step và gộp. Không đọc scaled MSE thành USD.
+- Sửa DEFINE.md, DESIGN.md, walkthrough.md và presentation_10min.md; cập nhật tracker. Không source/config/requirements/HTML hoặc commit. Presentation giữ 12 slide/600 giây, các conflict đã đóng được ghi lịch sử thay vì còn chờ duyệt budget.
+
+
 ## Git sync / publish - 2026-11-13
 
 - Human yêu cầu fetch, đồng bộ remote, tạo ThuongFEAI và push các thay đổi hiện tại.

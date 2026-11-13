@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="520" viewBox="0 0 600 520" fill="none">
+ <defs><linearGradient id="p" x1="100" y1="90" x2="490" y2="400" gradientUnits="userSpaceOnUse"><stop stop-color="#7A2CFF"/><stop offset="1" stop-color="#B84DFF"/></linearGradient><radialGradient id="a"><stop stop-color="#E3CFFF" stop-opacity=".8"/><stop offset="1" stop-color="#FAF7FF" stop-opacity="0"/></radialGradient><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="2.5" fill="#7A2CFF" opacity=".5"/></pattern></defs>
+ <circle cx="315" cy="245" r="245" fill="url(#a)"/>
+ <path d="M35 420H565M35 100H565" stroke="#EAE3F5"/>
+ <rect x="40" y="155" width="102" height="202" rx="20" fill="white" stroke="#E3CFFF"/>
+ <rect x="61" y="176" width="60" height="160" fill="url(#dots)"/>
+ <path d="M150 255H202M194 247L202 255L194 263" stroke="#7A2CFF" stroke-width="2"/>
+ <rect x="213" y="110" width="190" height="290" rx="26" fill="white" stroke="#E3CFFF"/>
+ <rect x="228" y="125" width="160" height="260" rx="18" fill="#FAF7FF"/>
+ <g stroke="#B84DFF" stroke-opacity=".35"><path d="M255 185L308 155L360 185M255 185L308 220L360 185M255 185L308 285L360 250M255 250L308 155M255 250L308 220L360 315M255 250L308 285L360 185M255 315L308 220M255 315L308 285L360 315M255 315L308 350L360 315M308 155L360 250M308 350L360 250"/></g>
+ <g fill="url(#p)"><circle cx="255" cy="185" r="10"/><circle cx="255" cy="250" r="10"/><circle cx="255" cy="315" r="10"/><circle cx="308" cy="155" r="10"/><circle cx="308" cy="220" r="10"/><circle cx="308" cy="285" r="10"/><circle cx="308" cy="350" r="10"/><circle cx="360" cy="185" r="10"/><circle cx="360" cy="250" r="10"/><circle cx="360" cy="315" r="10"/></g>
+ <path d="M412 255H458M450 247L458 255L450 263" stroke="#7A2CFF" stroke-width="2"/>
+ <g stroke="#E3CFFF" fill="white"><rect x="470" y="137" width="90" height="38" rx="10"/><rect x="470" y="187" width="90" height="38" rx="10"/><rect x="470" y="237" width="90" height="38" rx="10"/><rect x="470" y="287" width="90" height="38" rx="10"/><rect x="470" y="337" width="90" height="38" rx="10"/></g>
+ <g fill="url(#p)"><circle cx="490" cy="156" r="5"/><circle cx="490" cy="206" r="5"/><circle cx="490" cy="256" r="5"/><circle cx="490" cy="306" r="5"/><circle cx="490" cy="356" r="5"/></g>
+ <g stroke="#B84DFF" stroke-width="3" stroke-linecap="round"><path d="M506 156H540M506 206H540M506 256H540M506 306H540M506 356H540"/></g>
+</svg>
