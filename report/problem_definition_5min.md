@@ -42,17 +42,21 @@ color: #102733
 
 ---
 
-## DEFINE / 03 · TÍNH NĂNG CỐT LÕI
+## DEFINE / 03 · TÍNH NĂNG CƠ BẢN & MỞ RỘNG
 
-# Năm tính năng cốt lõi
+# Phân tầng tính năng: Cơ bản & Mở rộng
 
-1. **Tự động tải & Lưu cache CSV**: Kéo nến ngày từ Yahoo Finance, lưu đệm đĩa cứng để chạy offline.
-2. **Cắt lát Sliding Window**: Tự động gom cứ 60 ngày quá khứ làm đầu vào và 5 ngày kế tiếp làm nhãn.
-3. **Dự báo đa bước đồng thời**: Direct Multi-Output xuất cùng lúc 5 ngày, tránh sai số tích lũy dây chuyền.
-4. **Đấu trường 4 mô hình**: Chạy song song Linear Regression, ARIMA, Vanilla LSTM và 1D-CNN.
-5. **Bảng chấm điểm minh bạch**: Đo độ lệch giá thực tế bằng tiền USD và tỷ lệ đoán đúng chiều tăng/giảm.
+### 1. Phạm vi Cơ bản (Core / Basic Scope)
+1. **Dữ liệu & EDA chống rò rỉ**: Kéo nến ngày Yahoo Finance, lưu cache offline, kiểm định dừng ADF, split 70/15/15.
+2. **LSTM 1-Step & Đối chứng Baseline**: Dự báo phiên kế tiếp ($t+1$) bằng LSTM, so sánh sòng phẳng với Linear Regression và ARIMA(5,1,0).
+3. **Optuna Tuning trên Kaggle GPU**: Tự động hóa tìm kiếm siêu tham số với TPE Sampler và cơ chế tỉa sớm MedianPruner.
+4. **Bảng chấm điểm USD minh bạch**: Đo sai số giá thực tế ($MAE, RMSE, MAPE, R^2$) và tỷ lệ đoán đúng hướng giá ($DA$).
 
-<!-- 35 giây. Lời nói: Hệ thống có 5 tính năng cốt lõi: thứ nhất là tự động kéo và cache dữ liệu để chạy offline; thứ hai là cắt cửa sổ trượt 60 ngày sang 5 ngày; thứ ba là xuất đồng thời 5 ngày để không bị tích tụ sai số; thứ tư là chạy song song 4 mô hình đối chứng; và thứ năm là bảng chấm điểm sai số tính bằng USD cùng tỷ lệ đoán đúng xu hướng. -->
+### 2. Phạm vi Mở rộng chuyên sâu (Extended Research Scope)
+5. **Dự báo đa bước 5 ngày ($t+1 \dots t+5$)**: Thực nghiệm so sánh 2 chiến lược **Recursive** (tự hồi quy) vs **Direct Multi-Output** (xuất cùng lúc 5 ngày).
+6. **Mở rộng mô hình 1D-CNN**: Mạng tích chập 1 chiều quét mẫu hình nến cục bộ so sánh toàn diện với LSTM.
+
+<!-- 35 giây. Lời nói: Tính năng được phân định rõ hai tầng: Tầng cơ bản hoàn thành trọn vẹn pipeline chống rò rỉ, mô hình LSTM một bước cùng hai baseline, đặc biệt tích hợp sẵn Optuna tuning trên Kaggle GPU với cơ chế tỉa sớm. Tầng mở rộng chuyên sâu nâng cấp lên bài toán đa bước 5 ngày so sánh giữa Recursive và Direct, đồng thời bổ sung kiến trúc 1D-CNN để lấy điểm nghiên cứu tối đa. -->
 
 ---
 
@@ -91,24 +95,27 @@ color: #102733
 
 ---
 
-## DESIGN / 06 · CẤU TRÚC THƯ MỤC & PHÂN HỆ
+## DESIGN / 06 · KIẾN TRÚC 6 LỚP THEO CLEAN ARCHITECTURE
 
-# Chia module theo đúng trách nhiệm
+# Tổ chức 6 lớp: Tách biệt trách nhiệm
+
+> **Nguyên tắc Clean Architecture:** Tách biệt tuyệt đối giữa xử lý dữ liệu ($L1$), mô hình & tuning ($L2$), dự báo ($L3$) và đánh giá ($L4$) để code không bị rối và dễ kiểm thử độc lập.
 
 ```text
 Stock-Forecasting/
-├── config/             # default_config.yaml (quản lý tham số tập trung)
-├── data/               # raw/ (cache CSV) và processed/ (mảng windowed)
+├── config/             # L0: default_config.yaml (quản lý tham số tập trung)
 ├── src/
-│   ├── data/           # data_loader.py (tải cache) & dataset.py (split, scale, window)
-│   ├── models/         # baseline_lr, baseline_arima, lstm_model, cnn_model
-│   └── utils/          # metrics.py (tính sai số) & visualizer.py (vẽ đồ thị)
-├── scripts/            # train.py, eval.py, predict.py
-├── tests/              # test_data.py (chống leakage) & test_models.py (tensor shapes)
-└── outputs/            # runs/<run_id>/ (weights .pt, logs) & published/ (báo cáo)
+│   ├── datasets/       # L1: Thu thập, kiểm định ADF, split 70/15/15, scale, window
+│   ├── models/         # L2: LSTM, LR, ARIMA, 1D-CNN
+│   ├── training/       # L2: Trainer, Optuna Tuning trên Kaggle GPU, checkpoint
+│   ├── predict/        # L3: Động cơ Single-step, Recursive, Direct, Backtest
+│   ├── evaluation/     # L4: Tính metrics USD và xuất 9 biểu đồ (cấm import ngược L2)
+│   └── utils/          # L0: Logging, IO, provenance, seed
+├── notebooks/          # L5: Demo trực quan và phân tích kết quả
+└── outputs/runs/       # Lưu vết tự động weights .pt, loss log, metrics CSV
 ```
 
-<!-- 25 giây. Lời nói: Cấu trúc dự án được phân chia sạch sẽ: thư mục config chứa tham số tập trung; thư mục src chia rõ thành data tiền xử lý, models chứa 4 kiến trúc độc lập, và utils chứa hàm đo lường và vẽ biểu đồ. Thư mục scripts cung cấp lệnh chạy dòng lệnh, và tests chứa các bài kiểm tra tự động trước khi chạy thật. -->
+<!-- 25 giây. Lời nói: Nhóm thiết kế hệ thống theo chuẩn Clean Architecture phân tầng 6 lớp: L0 quản lý cấu hình, L1 tiền xử lý dữ liệu, L2 mô hình và Optuna tuning, L3 động cơ suy luận, L4 đánh giá và xuất biểu đồ, và L5 là tầng giao tiếp demo. Các lớp độc lập một chiều, đảm bảo code sạch sẽ, không bị rối và cực kỳ dễ kiểm thử. -->
 
 ---
 

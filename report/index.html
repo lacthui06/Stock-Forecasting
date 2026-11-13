@@ -134,39 +134,39 @@
   <!-- SLIDE 3 -->
   <section class="slide slide-3" data-duration="35" aria-label="Slide 3">
     <div class="slide-top">
-      <span class="eyebrow">DEFINE / 03 · TÍNH NĂNG CỐT LÕI</span>
+      <span class="eyebrow">DEFINE / 03 · TÍNH NĂNG CƠ BẢN & MỞ RỘNG</span>
       <span class="chapter">DEFINE <i></i> 03</span>
     </div>
-    <h1>Năm tính năng.<br><em>Đơn giản và thực tế.</em></h1>
+    <h1>Phân tầng tính năng.<br><em>Cơ bản & Mở rộng chuyên sâu.</em></h1>
     <div class="content">
       <div class="edge-grid">
         <article class="edge reveal" data-live>
           <span class="edge-index">01</span>
-          <h3>Tự động tải & Cache CSV</h3>
-          <p>Kéo nến ngày từ Yahoo Finance, lưu cache đĩa cứng để chạy offline an toàn không phụ thuộc mạng.</p>
+          <h3>Dữ liệu & Chống Leakage</h3>
+          <p>Tải cache offline, kiểm định dừng ADF trên Train, chia tập 70/15/15 và fit Scaler train-only. <i>(Cơ bản)</i></p>
         </article>
         <article class="edge reveal" data-live>
           <span class="edge-index">02</span>
-          <h3>Cắt lát Sliding Window</h3>
-          <p>Tự động cắt chuỗi thời gian liên tục: cứ 60 ngày quá khứ làm đề bài (X), 5 ngày tiếp theo làm đáp án (Y).</p>
+          <h3>LSTM 1-Step & Baselines</h3>
+          <p>Dự báo phiên kế tiếp (t+1), đối chứng sòng phẳng với Linear Regression và ARIMA(5,1,0). <i>(Cơ bản)</i></p>
         </article>
         <article class="edge reveal" data-live>
           <span class="edge-index">03</span>
-          <h3>Dự báo đa bước đồng thời</h3>
-          <p>Direct Multi-Output xuất cùng lúc 5 ngày, không đoán mò dây chuyền để triệt tiêu tích tụ sai số.</p>
+          <h3>Optuna Tuning Kaggle GPU</h3>
+          <p>Tự động hóa tìm kiếm siêu tham số bằng TPESampler và cơ chế tỉa sớm MedianPruner. <i>(Cơ bản)</i></p>
         </article>
         <article class="edge reveal" data-live>
           <span class="edge-index">04</span>
-          <h3>Đấu trường 4 mô hình</h3>
-          <p>So sánh công bằng giữa 2 baseline thống kê (Linear, ARIMA) và 2 mô hình học sâu (LSTM, 1D-CNN).</p>
+          <h3>Đa bước 5 ngày & 1D-CNN</h3>
+          <p>Thực nghiệm so sánh Recursive vs Direct Multi-Output và mở rộng kiến trúc tích chập 1D-CNN. <i>(Mở rộng)</i></p>
         </article>
       </div>
       <div class="ribbon reveal">
         <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 24 10 10L40 13"/></svg>
-        <span><b>Tính năng 05:</b> Bảng chấm điểm minh bạch đo sai lệch USD thực tế (MAE, RMSE, MAPE) và tỷ lệ đoán đúng hướng giá (Directional Accuracy).</span>
+        <span><b>Đánh giá chuẩn:</b> Bảng chấm điểm USD minh bạch (MAE, RMSE, MAPE, R², DA) cùng Notebook demo tương tác trực quan.</span>
       </div>
     </div>
-    <aside class="notes">Hệ thống có 5 tính năng cốt lõi: thứ nhất là tự động kéo và cache dữ liệu để chạy offline; thứ hai là cắt cửa sổ trượt 60 ngày sang 5 ngày; thứ ba là xuất đồng thời 5 ngày để không bị tích tụ sai số; thứ tư là chạy song song 4 mô hình đối chứng; và thứ năm là bảng chấm điểm sai số tính bằng USD cùng tỷ lệ đoán đúng xu hướng.</aside>
+    <aside class="notes">Tính năng được phân định rõ hai tầng: Tầng cơ bản hoàn thành trọn vẹn pipeline chống rò rỉ, mô hình LSTM một bước cùng hai baseline, đặc biệt tích hợp sẵn Optuna tuning trên Kaggle GPU với cơ chế tỉa sớm. Tầng mở rộng chuyên sâu nâng cấp lên bài toán đa bước 5 ngày so sánh giữa Recursive và Direct, đồng thời bổ sung kiến trúc 1D-CNN để lấy điểm nghiên cứu tối đa.</aside>
     <footer class="slide-footer">
       <span>NVDA / ĐẶC TẢ ĐỀ TÀI · DEFINE & DESIGN</span>
       <span>1:00–1:35 <b>03 / 10</b></span>
@@ -288,42 +288,42 @@
   <!-- SLIDE 6 -->
   <section class="slide slide-6" data-duration="25" aria-label="Slide 6">
     <div class="slide-top">
-      <span class="eyebrow">DESIGN / 06 · CẤU TRÚC THƯ MỤC & PHÂN HỆ</span>
+      <span class="eyebrow">DESIGN / 06 · KIẾN TRÚC 6 LỚP THEO CLEAN ARCHITECTURE</span>
       <span class="chapter">DESIGN <i></i> 06</span>
     </div>
-    <h1>Cấu trúc module.<br><em>Rõ ràng và mạch lạc.</em></h1>
+    <h1>Kiến trúc 6 lớp Clean Architecture.<br><em>Tách biệt tuyệt đối trách nhiệm.</em></h1>
     <div class="content">
       <div class="module-layout">
         <div class="folder-tree reveal">
           <div class="tree-root">
             <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 14h38v25H5zM5 14V8h15l5 6"/></svg>
-            <b>Stock-Forecasting/</b>
+            <b>StockVision Architecture (L0 → L5)</b>
           </div>
-          <div class="tree-line"><span>├─</span><b>config/</b><small>default_config.yaml</small></div>
-          <div class="tree-line"><span>├─</span><b>src/</b><small>Mã nguồn tái sử dụng</small></div>
-          <div class="tree-child">data/ · models/ · utils/</div>
-          <div class="tree-line"><span>├─</span><b>scripts/</b><small>train.py · eval.py · predict.py</small></div>
-          <div class="tree-line"><span>├─</span><b>tests/</b><small>test_data.py · test_models.py</small></div>
-          <div class="tree-line"><span>└─</span><b>data/ · outputs/ · report/</b></div>
+          <div class="tree-line"><span>├─</span><b>L5 Presentation:</b><small>notebooks/ · src/pipeline.py</small></div>
+          <div class="tree-line"><span>├─</span><b>L4 Evaluation:</b><small>metrics USD · xuất 9 biểu đồ</small></div>
+          <div class="tree-line"><span>├─</span><b>L3 Inference:</b><small>single-step · recursive & direct</small></div>
+          <div class="tree-line"><span>├─</span><b>L2 Modeling:</b><small>LSTM · LR · ARIMA · CNN · Optuna</small></div>
+          <div class="tree-line"><span>├─</span><b>L1 Data:</b><small>yfinance · ADF test · split · scale</small></div>
+          <div class="tree-line"><span>└─</span><b>L0 Foundation:</b><small>config.yaml · utils · provenance</small></div>
         </div>
         <div class="module-notes">
           <div class="module-item reveal" data-live>
-            <b>SRC / DATA</b>
-            <p>data_loader: Tải và lưu cache CSV.<br>dataset: Chia tập 70/15/15, scale, cắt window.</p>
+            <b>L1 DATA & L2 MODELING</b>
+            <p>L1 chống leakage (fit scaler train-only, ADF).<br>L2 chứa LSTM, baselines & Optuna tuning GPU.</p>
           </div>
           <div class="module-item reveal" data-live>
-            <b>SRC / MODELS</b>
-            <p>baseline_lr, baseline_arima,<br>lstm_model, cnn_model: Mỗi model 1 file module.</p>
+            <b>L3 INFERENCE & L4 EVAL</b>
+            <p>L3 suy luận đa bước (recursive vs direct).<br>L4 tính metrics USD độc lập (cấm import ngược L2).</p>
           </div>
           <div class="module-item reveal" data-live>
-            <b>SRC / UTILS</b>
-            <p>metrics (RMSE, MAE, MAPE, R2, DA);<br>visualizer vẽ biểu đồ; CLI chạy tự động.</p>
+            <b>L5 PRESENTATION</b>
+            <p>Notebook demo chỉ gọi module qua API mỏng,<br>tách rời hoàn toàn khỏi mã nguồn thuật toán.</p>
           </div>
         </div>
       </div>
-      <p class="bottom-note reveal">Cấu trúc chuẩn hóa: Tài liệu sống duy nhất là walkthrough.md; config quản lý tập trung mọi tham số.</p>
+      <p class="bottom-note reveal">Nguyên tắc cốt lõi: Nhóm tổ chức code theo Clean Architecture, tách biệt tuyệt đối giữa data (L1), model (L2), inference (L3) và eval (L4) để code không bị rối và dễ kiểm thử.</p>
     </div>
-    <aside class="notes">Cấu trúc dự án được phân chia sạch sẽ: thư mục config chứa tham số tập trung; thư mục src chia rõ thành data tiền xử lý, models chứa 4 kiến trúc độc lập, và utils chứa hàm đo lường và vẽ biểu đồ. Thư mục scripts cung cấp lệnh chạy dòng lệnh, và tests chứa các bài kiểm tra tự động trước khi chạy thật.</aside>
+    <aside class="notes">Nhóm thiết kế hệ thống theo chuẩn Clean Architecture phân tầng 6 lớp: L0 quản lý cấu hình, L1 tiền xử lý dữ liệu, L2 mô hình và Optuna tuning, L3 động cơ suy luận, L4 đánh giá và xuất biểu đồ, và L5 là tầng giao tiếp demo. Các lớp độc lập một chiều, đảm bảo code sạch sẽ, không bị rối và cực kỳ dễ kiểm thử.</aside>
     <footer class="slide-footer">
       <span>NVDA / THIẾT KẾ KỸ THUẬT · DEFINE & DESIGN</span>
       <span>2:45–3:10 <b>06 / 10</b></span>

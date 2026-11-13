@@ -10,26 +10,31 @@ Thiết kế kiến trúc và kỹ thuật triển khai Python (.py). Nguồn y�
 
 ### 1.1. Phong cách kiến trúc
 
-**Layered batch pipeline (kiến trúc phân lớp, xử lý theo lô)** với artifact trung gian trên đĩa. Lý do:
+**Layered batch pipeline kết hợp nguyên tắc kiến trúc phần mềm sạch (Clean Architecture)** phân tầng 6 lớp ($L0 \to L5$) với artifact trung gian trên đĩa.
+
+> **Tuyên ngôn kiến trúc cốt lõi:** Nhóm tổ chức code theo nguyên tắc thiết kế phần mềm sạch (Clean Architecture), tách biệt tuyệt đối giữa xử lý dữ liệu ($L1$), mô hình ($L2$), dự báo ($L3$) và đánh giá ($L4$) để code không bị rối và dễ kiểm thử độc lập (unit test).
+
+Lý do lựa chọn kiến trúc:
 
 | Yêu cầu | Cách kiến trúc đáp ứng |
 |---|---|
+| Tách biệt trách nhiệm | Mỗi tầng chỉ làm đúng một nhiệm vụ; $L4$ (Evaluation) chỉ đọc file CSV kết quả, không import ngược code huấn luyện $L2$ |
 | Dữ liệu ngày, quy mô nhỏ, chạy theo lô | Không cần service, queue hay database sản phẩm (§6.2 cấm thêm dịch vụ DB) |
 | Chống leakage | Mỗi stage nhận đầu vào tường minh; `datasets.splitting` là nơi duy nhất sinh biên thời gian |
 | Truy vết, tái lập | Mọi stage ghi artifact + provenance vào thư mục run |
-| Notebook chỉ gọi module | Lớp trình diễn nằm trên cùng, không chứa logic |
-| Hai môi trường (local, Kaggle) | Đường dẫn qua config, không hardcode |
+| Notebook chỉ gọi module | Lớp trình diễn nằm trên cùng ($L5$), chỉ gọi API của các tầng dưới, không chứa logic thuật toán |
+| Hai môi trường (local, Kaggle) | Đường dẫn qua config, chạy heavy training & Optuna tuning trên Kaggle GPU, demo nhẹ nhàng trên Local |
 
 ### 1.2. Các lớp và trách nhiệm
 
-| Lớp | Package | Trách nhiệm | Phụ thuộc được phép |
-|---|---|---|---|
-| L5 Presentation | `notebooks/`, `src/pipeline.py` | Gọi hàm, hiển thị; không chứa thuật toán | L1–L4 |
-| L4 Evaluation | `src/evaluation/` | Metrics, căn chỉnh, so sánh, biểu đồ | L1, dữ liệu CSV từ predict |
-| L3 Inference | `src/predict/` | Single/Recursive/Direct, backtest rolling-origin, future forecast | L1, L2, `datasets` |
-| L2 Modeling | `src/models/`, `src/training/` | Kiến trúc, baseline, vòng huấn luyện, Optuna, checkpoint | L1, `datasets` |
-| L1 Data | `src/datasets/` | Collection, validation, EDA, cleaning, split, scale, window | `utils` |
-| L0 Foundation | `src/utils/`, `config/` | Config, logging, IO, hash, provenance, seed, lỗi, helper vẽ | (không) |
+| Lớp | Package | Trách nhiệm | Phụ thuộc được phép | Phân cấp tính năng |
+|---|---|---|---|---|
+| L5 Presentation | `notebooks/`, `src/pipeline.py` | Gọi hàm, hiển thị; không chứa thuật toán | L1–L4 | Cơ bản (F10) |
+| L4 Evaluation | `src/evaluation/` | Metrics USD, căn chỉnh ngày, so sánh, xuất 9 biểu đồ | L1, dữ liệu CSV từ predict | Cơ bản (F05, F06) |
+| L3 Inference | `src/predict/` | Single-step (Cơ bản), Recursive & Direct (Mở rộng), backtest rolling-origin | L1, L2, `datasets` | Single-step: Cơ bản; Multi-step (F07): Mở rộng |
+| L2 Modeling | `src/models/`, `src/training/` | LSTM, Baseline (LR, ARIMA), vòng huấn luyện, Optuna tuning, checkpoint | L1, `datasets` | LSTM/Baselines/Optuna: Cơ bản; 1D-CNN (F08): Mở rộng |
+| L1 Data | `src/datasets/` | Collection, validation, EDA kiểm định ADF, split, scale, window | `utils` | Cơ bản (F01, F02) |
+| L0 Foundation | `src/utils/`, `config/` | Config, logging, IO, hash, provenance, seed, lỗi, helper vẽ | (không) | Cơ bản (Nền tảng) |
 
 **Quy tắc phụ thuộc (một chiều):** `utils ← datasets ← models ← training ← predict`; `evaluation` chỉ đọc bảng prediction và chuỗi Close nên **không import `models`/`training`**. Không có phụ thuộc vòng. `tests/` được import tất cả.
 

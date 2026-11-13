@@ -73,7 +73,12 @@ Yahoo Finance qua package `yfinance`, phương thức Historical Market Data. Da
 
 Confirmed: `auto_adjust=False`; Close Yahoo vẫn split-adjusted, không gọi là giá hoàn toàn nguyên gốc. Lưu Adj Close và corporate actions, liên kết theo phiên nếu nguồn trả riêng. Thiếu trường cần thiết phải báo schema mismatch, không tự chế cột giả.
 
-Target single-step là Close phiên t+1. Target multi-step là `[Close(t+1), ..., Close(t+5)]`. Feature cơ sở theo walkthrough là lịch sử Close, F=1; bổ sung feature chỉ sau EDA trên train và human duyệt. Đổi feature phải đánh giá lại tính công bằng và cách cập nhật Recursive.
+Target single-step là Close phiên t+1. Target multi-step là `[Close(t+1), ..., Close(t+5)]`. Feature cơ sở theo walkthrough là lịch sử Close, F=1.
+
+**Lý do lựa chọn F=1 (Close đơn biến) cho pha cơ sở:**
+1. *Chuẩn tắc hóa bài toán tự hồi quy đơn biến (Univariate Time Series Baseline):* Bắt đầu với Close giúp thiết lập mốc đánh giá năng lực học quy luật thời gian thuần túy của LSTM và các baseline, tránh đưa sớm các biến ngoại sinh (Volume, chỉ báo kỹ thuật) gây nhiễu (noise) và overfit khi dữ liệu chỉ có ~1250 mẫu (5 năm).
+2. *Loại trừ bẫy kỹ thuật trong Recursive Forecasting:* Khi dự báo đa bước đệ quy từ $t+1$ sang $t+2 \dots t+5$, nếu dùng đa biến (Close, Volume, RSI), hệ thống sẽ không có sẵn giá trị Volume hay RSI thực tế của các phiên tương lai để làm input cho các bước tiếp theo, buộc phải giả định phi thực tế hoặc phải xây dựng mô hình phụ dự báo đồng thời tất cả các biến đó. Do đó, $F=1$ là điều kiện tiên quyết để đánh giá chiến lược Recursive một cách chặt chẽ.
+3. *Lộ trình mở rộng có kiểm soát (D02):* Đề tài không loại trừ đa biến vĩnh viễn; việc bổ sung Volume hoặc các chỉ báo kỹ thuật được quy hoạch rõ ràng trong quyết định mở D02, chỉ thực hiện sau khi hoàn thành EDA trên tập Train và có sự phê duyệt độc lập.
 
 ### C. Input Configuration
 
@@ -123,6 +128,8 @@ Target single-step là Close phiên t+1. Target multi-step là `[Close(t+1), ...
 Đây là thứ tự phụ thuộc; lỗi trong dữ liệu có thể buộc quay lại collection/review. Các thao tác học thống kê ở bước 3–4 chỉ thực hiện sau khi xác định train boundary, dù trình bày EDA trước bước xuất split manifest. Kiểm tra schema toàn bộ dữ liệu không phải quyền tuning trên test.
 
 **Data leakage rules:** không shuffle chuỗi trước split; không fit scaler/imputer/feature selection trên val/test; không dùng test để chọn hyperparameters, checkpoint hoặc policy; không dùng feature có sẵn sau origin. ADF/ACF trên train chỉ hỗ trợ thiết kế, không tự xác định window tối ưu.
+
+**Kiểm định tính dừng (ADF Test) và bẫy dự báo trễ (Naive Persistence Trap):** Chuỗi giá cổ phiếu NVDA có xu hướng tăng mạnh và mang bản chất không dừng (non-stationary). Khâu EDA bắt buộc thực hiện kiểm định Augmented Dickey-Fuller (ADF) trên tập Train để khảo sát tính dừng và xác nhận bậc sai phân tích hợp $d=1$ cho mô hình ARIMA(5,1,0). Trong các bài toán giá tài chính, Deep Learning rất dễ rơi vào bẫy "dự báo quán tính" ($\hat{y}_{t+1} \approx y_t$, chỉ đơn thuần copy lại giá ngày hôm trước) nhưng vẫn đạt RMSE/MAE thấp ảo do độ trễ 1 ngày. Do đó, việc đo lường kiểm định dừng, kết hợp chỉ số **Directional Accuracy (DA)** và đối chứng trực diện với ARIMA(5,1,0) là bắt buộc để chứng minh mô hình thực sự học được quy luật biến động chứ không sao chép quán tính.
 
 Sequence tại origin t: `X = [Close(t-59), ..., Close(t)]`; Y một bước là `Close(t+1)`, Y năm bước là `Close(t+1..t+5)`. X float32 có shape `(B,60,1)` cho LSTM; adapter CNN chuyển sang `(B,1,60)`. Output/target `(B,1)` hoặc `(B,5)`, tránh broadcasting ngoài ý muốn. Linear Regression nhận vector 60 giá; ARIMA dùng chuỗi có thứ tự, không giả định cần tensor như DL.
 
@@ -204,22 +211,35 @@ outputs/published/
 
 Run/snapshot ID phải duy nhất, không ghi đè thí nghiệm khác. Mỗi trial có ID và checkpoint riêng; lưu config, seed, hardware, duration, ticker/range/target/window/horizon, source hash và lựa chọn kết quả. Chọn run xuất bản tường minh; không mặc định run mới nhất. Raw runs, large data/weights, secrets phải được ignore; chỉ xuất evidence đã review. SQLite/file storage cho Optuna là chi tiết TBD trước plan tuning, không thêm dịch vụ database sản phẩm.
 
-# 5. CORE FEATURES
+# 5. CORE AND EXTENDED FEATURES
 
-Tất cả F01–F10 là Must Have trong phạm vi đã chốt; F07/F08 là required extensions, thực hiện sau pipeline single-step. Các bảng mô tả chức năng là hợp đồng cần nghiệm thu, không phải danh sách code đã có.
+Phạm vi chức năng của dự án được phân cấp rõ ràng thành hai nhóm: **Nhóm tính năng cơ bản bắt buộc (Core / Basic Scope)** đảm bảo pipeline chuẩn tắc và mô hình nền tảng, và **Nhóm tính năng mở rộng chuyên sâu (Extended / Advanced Research Scope)** nhằm nghiên cứu thực nghiệm đa bước và so sánh kiến trúc.
+
+## 5.1. Nhóm tính năng cơ bản (Core / Basic Scope)
+
+Bao gồm các tính năng cốt lõi F01–F06, F09, F10 và **Tối ưu hóa siêu tham số bằng Optuna trên Kaggle GPU (thuộc F03)** là yêu cầu bắt buộc:
 
 | ID / Name | Description / vấn đề giải quyết | Input | Processing | Output | Acceptance Criteria |
 |---|---|---|---|---|---|
 | F01 Historical Collection | Có snapshot dữ liệu truy vết | Request theo 4.1 | Tải/cache, xác thực metadata | Raw/actions/provenance | NVDA/1d/5y request được lưu; empty/network lỗi có thông báo |
-| F02 EDA & Preprocessing | Hiểu chất lượng, chống leakage | Raw/policy | Findings, human review, split/scale/window | Dataset/scaler/splits | Có bằng chứng review; fit train-only; shape/date hợp lệ |
-| F03 LSTM Training | Mô hình chính cho regression | Train/val/config | Train, checkpoint, tuning theo 6 | Model/history | Finite loss, best checkpoint nạp lại được; không dùng test |
-| F04 Single-step | Dự báo phiên kế tiếp | 60 Close đã có | LSTM/CNN output 1, inverse | Giá/date | Một giá cho đúng phiên kế tiếp, có actual khi backtest |
-| F05 Evaluation | Đo được chất lượng | Aligned predictions/actual | Metrics theo 7 | Metrics/residuals | Khớp công thức và policy undefined, không bịa kết quả |
-| F06 Visualization | Đọc và kiểm tra kết quả | Artifacts | Vẽ theo 4.5 | PNG + provenance | Đúng trục/đơn vị/ngày, có train/val loss |
-| F07 Multi-step | Dự báo 5 phiên | 60 Close đã có | Recursive và direct cho cả hai DL | 5 predicted/model/method | Recursive không dùng actual tương lai; direct output 5; metrics từng bước |
-| F08 CNN Comparison | So kiến trúc công bằng | Cùng snapshot/splits | CNN 1D, cùng window/metrics | Bảng/ảnh so sánh | Chung origin/target/horizon, runtime có hardware |
-| F09 Baselines | Có mốc đối chiếu đơn giản/thống kê | Cùng lịch sử, actual theo thời gian | Linear Regression, ARIMA(5,1,0) | Baseline forecasts/metrics | So cùng origin và step; không tune trên test |
-| F10 Notebook Demo | Trình diễn sản phẩm | Config, snapshot, checkpoint/scaler | Load, forecast, display/export | Notebook chạy được và kết quả | Hướng dẫn thứ tự cell; lỗi thiếu artifact rõ; không tự full tuning khi chỉ xem demo |
+| F02 EDA & Preprocessing | Hiểu chất lượng, kiểm định ADF, chống leakage | Raw/policy | Findings, ADF test, split/scale/window | Dataset/scaler/splits | Bằng chứng EDA train-only; fit scaler chỉ trên train; shape/date hợp lệ |
+| F03 LSTM Training & Optuna Tuning | Mô hình chính & Tối ưu hóa siêu tham số tự động | Train/val/config | Huấn luyện LSTM, Optuna TPE + MedianPruner trên Kaggle GPU | Model/best checkpoint/history | Finite loss; best checkpoint nạp lại được; Optuna budget 10 trials/study |
+| F04 Single-step | Dự báo phiên kế tiếp (t+1) | 60 Close đã có | LSTM output 1, inverse-scale về USD | Giá/date USD | Đúng 1 giá cho phiên kế tiếp, có actual khi backtest |
+| F05 Evaluation | Đo được chất lượng thực tế | Aligned predictions/actual | Metrics USD theo 7 (MAE, RMSE, MAPE, R², DA) | Bảng metrics/residuals | Khớp công thức trên USD, policy undefined rõ ràng |
+| F06 Visualization | Đọc và kiểm tra kết quả trực quan | Artifacts | Xuất bộ 9 biểu đồ chuẩn theo 4.5 | PNG + provenance | Đúng trục/đơn vị/ngày, có loss curve train/val |
+| F09 Baselines | Mốc đối chứng đơn giản và thống kê | Cùng lịch sử, actual theo thời gian | Linear Regression, ARIMA(5,1,0) | Baseline forecasts/metrics | So cùng origin và step; không tune trên test |
+| F10 Notebook Demo | Trình diễn sản phẩm trực quan | Config, snapshot, checkpoint/scaler | Load module, forecast, display/export | Notebook chạy được | Trình diễn trực quan, nạp artifact có sẵn, không chạy lại heavy tuning |
+
+## 5.2. Nhóm tính năng mở rộng chuyên sâu (Extended / Advanced Research Scope)
+
+Bao gồm các nghiên cứu thực nghiệm mở rộng nhằm so sánh chiến lược đa bước và kiến trúc mô hình:
+
+| ID / Name | Description / vấn đề giải quyết | Input | Processing | Output | Acceptance Criteria |
+|---|---|---|---|---|---|
+| F07 Multi-step (5 ngày) | Dự báo chuỗi 5 phiên liên tiếp | 60 Close đã có | Thực nghiệm so sánh Recursive vs Direct Multi-output | 5 predicted Close USD/mô hình | Recursive không dùng actual tương lai; direct xuất vector (B,5); đo metrics từng bước h=1..5 |
+| F08 CNN Comparison | So sánh kiến trúc tích chập 1D-CNN | Cùng snapshot/splits | Huấn luyện 1D-CNN, cùng window 60 và metrics | Bảng/ảnh so sánh với LSTM | Cùng cohort, cùng hardware/runtime, đánh giá ưu/nhược điểm trích xuất đặc trưng |
+
+**Quy tắc triển khai:** Nhóm tính năng cơ bản (5.1) được ưu tiên hoàn thiện trước để đảm bảo tính ổn định của pipeline và baseline; sau đó nhóm tính năng mở rộng (5.2) được triển khai trên cùng tập benchmark đã khóa.
 
 **Recursive:** dùng mô hình single-step, nối predicted Close vào cửa sổ và bỏ phần tử cũ, lặp 5 lần. Không nạp actual t+1 trong lần forecast tạo tại t. **Direct multi-output:** mô hình riêng trả `(B,5)` trong một lần; không phải 5 mô hình direct độc lập. Recursive dùng model được chọn theo objective single-step nên không tự nhận là cấu hình tối ưu multi-step.
 
