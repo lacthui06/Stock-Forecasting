@@ -216,12 +216,13 @@ LSTM xử lý các quan sát theo trình tự và duy trì trạng thái giữa 
 
 **Duration:** 00:55
 
-**Main message:** Sáu lớp theo DESIGN; tách xử lý dữ liệu, học mô hình, dự báo và đánh giá.
+**Main message:** Pipeline phân lớp, tách trách nhiệm, giao tiếp qua interface/artifact; áp dụng các nguyên tắc phù hợp của Clean Architecture.
 
 **Objective:** System Architecture: giải thích nội dung qua visual có nguồn và đúng trạng thái triển khai.
 
 **On-slide Content:**
 
+- Pipeline phân lớp, tách trách nhiệm, giao tiếp qua interface/artifact; áp dụng các nguyên tắc phù hợp của Clean Architecture.
 - L5 Presentation: Notebook + pipeline.py; điều phối và hiển thị.
 - L1 Data → L2 Modeling → L3 Inference → L4 Evaluation.
 - Cạnh dữ liệu: snapshot/X,Y → checkpoint+scaler → predictions → metrics/plots.
@@ -234,7 +235,7 @@ LSTM xử lý các quan sát theo trình tự và duy trì trạng thái giữa 
 
 **Speaker Script:**
 
-Sơ đồ này mô tả kiến trúc hệ thống, khác với các lớp bên trong mạng vừa trình bày. DESIGN có sáu lớp. Presentation gồm Notebook và pipeline điều phối, không chứa toàn bộ thuật toán. Data xử lý nguồn, split và preprocessing. Modeling gồm kiến trúc và huấn luyện. Inference dùng model đã chọn để tạo dự báo; Evaluation đọc dự báo cùng actual để tính chỉ số và biểu đồ. Foundation hỗ trợ xuyên suốt bằng cấu hình, seed, IO và thông tin truy vết. Mũi tên giữa các lớp có nhãn đầu ra cụ thể: windows, checkpoint kèm scaler, prediction rồi metrics. Đây là luồng dữ liệu, không phải sơ đồ import. Evaluation không cần import trainer hay model để đọc prediction CSV. Raw snapshot và artifacts theo run giúp truy ngược kết quả về dữ liệu và cấu hình. Đây là kiến trúc mục tiêu, chưa phải hệ thống ML đã chạy.
+Sơ đồ này mô tả kiến trúc hệ thống, khác với các lớp bên trong mạng vừa trình bày. Nhóm thiết kế pipeline phân lớp, tách trách nhiệm và giao tiếp qua interface hoặc artifact; áp dụng các nguyên tắc phù hợp của Clean Architecture. DESIGN có sáu lớp. Presentation gồm Notebook và pipeline điều phối, không chứa toàn bộ thuật toán. Data xử lý nguồn, split và preprocessing. Modeling gồm kiến trúc và huấn luyện. Inference dùng model đã chọn để tạo dự báo; Evaluation đọc dự báo cùng actual để tính chỉ số và biểu đồ. Foundation hỗ trợ xuyên suốt bằng cấu hình, seed, IO và thông tin truy vết. Mũi tên giữa các lớp có nhãn đầu ra cụ thể: windows, checkpoint kèm scaler, prediction rồi metrics. Đây là luồng dữ liệu, không phải sơ đồ import. Evaluation không cần import trainer hay model để đọc prediction CSV. Raw snapshot và artifacts theo run giúp truy ngược kết quả về dữ liệu và cấu hình. Đây là kiến trúc mục tiêu, chưa phải hệ thống ML đã chạy.
 
 **Source Evidence:** DESIGN §1.2–1.5; §4; §5.3.
 
@@ -283,6 +284,8 @@ Tại cấp module, datasets nhận request và raw data, khóa split trước E
 - Baseline LR dùng60 Close; ARIMA A (5,1,0), trend='n', toàn train, append(refit=False).
 - Rolling-origin H5: actual mới chỉ khi xuất hiện; không retrain test.
 - Inverse scaling → MAE/RMSE USD; MSE USD² chi tiết; bổ sung MAPE/R²/DA. Chưa có kết quả.
+- **Mục tiêu cần đạt:** MAPE < 5% · R² > 0,85 · DA > 55% · Mục tiêu DL vượt baseline.
+- **Mục tiêu nghiên cứu — chưa phải kết quả thực nghiệm.**
 
 **Visual Direction:** 2×2 experiment matrix; baseline strip; rolling-origin hai hàng; LaTeX MAE/RMSE; không có số liệu kết quả giả.
 
@@ -290,7 +293,7 @@ Tại cấp module, datasets nhận request và raw data, khóa split trước E
 
 **Speaker Script:**
 
-Ma trận thực nghiệm gồm hai họ mạng nhân hai đầu ra: single-step và direct năm bước. Mỗi ô là mười trial Optuna, tổng tối đa bốn mươi. Recursive dùng lại model single-step. Huấn luyện dùng AdamW, objective MSE scaled, tối đa năm mươi epoch với early stopping patience mười. Validation chọn cấu hình và checkpoint; chỉ sau khi khóa lựa chọn mới mở test. Hai baseline là Linear Regression và ARIMA A. LR nhìn cửa sổ sáu mươi Close; ARIMA fit toàn train với order năm, một, không và không drift. Khác biệt lịch sử này cần công bố. Rolling-origin dự báo năm bước tại t; sang t cộng một mới được thêm actual vừa xuất hiện. ARIMA chỉ cập nhật trạng thái bằng refit false, không học lại tham số. Trước metric, giá phải inverse-scale về USD. MAE là độ lệch tuyệt đối trung bình; RMSE nhạy hơn với lỗi lớn. MSE giá gốc dùng USD bình phương, khác loss scaled. Báo từng bước và tổng hợp; chưa có kết quả để xác định model thắng.
+Ma trận thực nghiệm gồm hai họ mạng nhân hai đầu ra: single-step và direct năm bước. Mỗi ô là mười trial Optuna, tổng tối đa bốn mươi. Recursive dùng lại model single-step. Huấn luyện dùng AdamW, objective MSE scaled, tối đa năm mươi epoch với early stopping patience mười. Validation chọn cấu hình và checkpoint; chỉ sau khi khóa lựa chọn mới mở test. Hai baseline là Linear Regression và ARIMA A. LR nhìn cửa sổ sáu mươi Close; ARIMA fit toàn train với order năm, một, không và không drift. Khác biệt lịch sử này cần công bố. Rolling-origin dự báo năm bước tại t; sang t cộng một mới được thêm actual vừa xuất hiện. ARIMA chỉ cập nhật trạng thái bằng refit false, không học lại tham số. Trước metric, giá phải inverse-scale về USD. MAE là độ lệch tuyệt đối trung bình; RMSE nhạy hơn với lỗi lớn. MSE giá gốc dùng USD bình phương, khác loss scaled. Báo từng bước và tổng hợp; chưa có kết quả để xác định model thắng. Mục tiêu nghiên cứu là MAPE dưới năm phần trăm, R bình phương trên không phẩy tám mươi lăm, DA trên năm mươi lăm phần trăm và Deep Learning vượt baseline. Đây là mục tiêu cần kiểm chứng, chưa phải kết quả thực nghiệm. Nếu không đạt hoặc thua baseline, nhóm vẫn báo cáo kết quả thực tế và phân tích nguyên nhân.
 
 **Source Evidence:** DEFINE §6.2, §7.2–7.6; DESIGN §4.4, §5.7; walkthrough §2.4.
 
@@ -300,7 +303,7 @@ Ma trận thực nghiệm gồm hai họ mạng nhân hai đầu ra: single-step
 
 **Duration:** 00:55
 
-**Main message:** Mỗi đầu việc gắn với sản phẩm có thể review; tiến độ ML chưa được xác nhận hoàn thành.
+**Main message:** Core triển khai trước, Required Extensions triển khai sau; phải hoàn thành cả hai.
 
 **Objective:** Milestones & Risks: giải thích nội dung qua visual có nguồn và đúng trạng thái triển khai.
 
@@ -309,16 +312,18 @@ Ma trận thực nghiệm gồm hai họ mạng nhân hai đầu ra: single-step
 - Khảo sát nghiệp vụ/chốt phạm vi → phiếu đăng ký, tình huống sử dụng.
 - Chuẩn bị dữ liệu → snapshot/dữ liệu mẫu, mô tả trường.
 - Thiết kế đánh giá → kịch bản test, giao thức so sánh.
-- Baseline → kết quả mốc so sánh. Giải pháp tối thiểu → pipeline hoàn chỉnh, Notebook.
+- **Giai đoạn 1 — Core:** dữ liệu, LSTM single-step, LR/ARIMA, Optuna, đánh giá và Notebook.
+- **Giai đoạn 2 — Required Extensions:** dự báo 5 phiên Recursive/Direct và so sánh 1D-CNN.
+- **Core triển khai trước, Required Extensions triển khai sau; phải hoàn thành cả hai.**
 - Leakage → split/scaler train-only; overfit → validation/early stopping; API/regime shift → snapshot/cache, phân tích giới hạn.
 
-**Visual Direction:** Bảng 5 hàng công việc→deliverable; sidebar 3 risk→mitigation. Không ghi done/% giả cho mốc ML.
+**Visual Direction:** Bảng công việc→deliverable với hai giai đoạn bắt buộc Core/Required Extensions; sidebar 3 risk→mitigation. Không ghi done/% giả cho mốc ML.
 
-**Diagram / Chart Specification:** Bảng 5 hàng công việc→deliverable; sidebar 3 risk→mitigation. Không ghi done/% giả cho mốc ML. Dùng header/title/footer cùng tọa độ; không có chart số liệu thực nghiệm khi chưa có artifact.
+**Diagram / Chart Specification:** Bảng công việc→deliverable với hai giai đoạn bắt buộc Core/Required Extensions; sidebar 3 risk→mitigation. Không ghi done/% giả cho mốc ML. Dùng header/title/footer cùng tọa độ; không có chart số liệu thực nghiệm khi chưa có artifact.
 
 **Speaker Script:**
 
-Các công việc được gắn với sản phẩm bàn giao cụ thể. Khảo sát nghiệp vụ và chốt phạm vi tạo phiếu đăng ký cùng tình huống sử dụng. Chuẩn bị dữ liệu phải có snapshot hoặc mẫu thật và mô tả trường. Thiết kế đánh giá tạo kịch bản test cùng giao thức so sánh. Baseline cần tạo kết quả làm mốc. Giải pháp tối thiểu phải có luồng xử lý hoàn chỉnh và Notebook demo. Hiện tài liệu và config đã có nhưng chưa có evidence hoàn thành các đầu việc ML. Leakage có thể làm sai số tốt giả nên cần kiểm split và scaler. Overfit được theo dõi qua validation và early stopping. API lỗi hoặc dữ liệu bị sửa cần snapshot có hash; biến động chế độ thị trường cần được phân tích như giới hạn mô hình.
+Các công việc được gắn với sản phẩm bàn giao cụ thể. Khảo sát nghiệp vụ và chốt phạm vi tạo phiếu đăng ký cùng tình huống sử dụng. Chuẩn bị dữ liệu phải có snapshot hoặc mẫu thật và mô tả trường. Thiết kế đánh giá tạo kịch bản test cùng giao thức so sánh. Baseline cần tạo kết quả làm mốc. Core được triển khai trước, gồm dữ liệu, LSTM single-step, LR và ARIMA, Optuna, đánh giá và Notebook. Required Extensions triển khai sau, gồm dự báo năm phiên bằng Recursive và Direct cùng so sánh 1D-CNN. Cả hai giai đoạn đều bắt buộc hoàn thành. Hiện tài liệu và config đã có nhưng chưa có evidence hoàn thành các đầu việc ML. Leakage có thể làm sai số tốt giả nên cần kiểm split và scaler. Overfit được theo dõi qua validation và early stopping. API lỗi hoặc dữ liệu bị sửa cần snapshot có hash; biến động chế độ thị trường cần được phân tích như giới hạn mô hình.
 
 **Source Evidence:** DESCRIPTION mục10 và bảng Công việc/Kết quả; DESIGN §6–7; inventory outputs/.
 
@@ -388,7 +393,7 @@ Kiến trúc mạng là một phần của hệ thống từ nguồn dữ liệu
 
 **04:45–05:40 · Slide 06 — Kiến trúc tổng thể của hệ thống**
 
-Sơ đồ này mô tả kiến trúc hệ thống, khác với các lớp bên trong mạng vừa trình bày. DESIGN có sáu lớp. Presentation gồm Notebook và pipeline điều phối, không chứa toàn bộ thuật toán. Data xử lý nguồn, split và preprocessing. Modeling gồm kiến trúc và huấn luyện. Inference dùng model đã chọn để tạo dự báo; Evaluation đọc dự báo cùng actual để tính chỉ số và biểu đồ. Foundation hỗ trợ xuyên suốt bằng cấu hình, seed, IO và thông tin truy vết. Mũi tên giữa các lớp có nhãn đầu ra cụ thể: windows, checkpoint kèm scaler, prediction rồi metrics. Đây là luồng dữ liệu, không phải sơ đồ import. Evaluation không cần import trainer hay model để đọc prediction CSV. Raw snapshot và artifacts theo run giúp truy ngược kết quả về dữ liệu và cấu hình. Đây là kiến trúc mục tiêu, chưa phải hệ thống ML đã chạy.
+Sơ đồ này mô tả kiến trúc hệ thống, khác với các lớp bên trong mạng vừa trình bày. Nhóm thiết kế pipeline phân lớp, tách trách nhiệm và giao tiếp qua interface hoặc artifact; áp dụng các nguyên tắc phù hợp của Clean Architecture. DESIGN có sáu lớp. Presentation gồm Notebook và pipeline điều phối, không chứa toàn bộ thuật toán. Data xử lý nguồn, split và preprocessing. Modeling gồm kiến trúc và huấn luyện. Inference dùng model đã chọn để tạo dự báo; Evaluation đọc dự báo cùng actual để tính chỉ số và biểu đồ. Foundation hỗ trợ xuyên suốt bằng cấu hình, seed, IO và thông tin truy vết. Mũi tên giữa các lớp có nhãn đầu ra cụ thể: windows, checkpoint kèm scaler, prediction rồi metrics. Đây là luồng dữ liệu, không phải sơ đồ import. Evaluation không cần import trainer hay model để đọc prediction CSV. Raw snapshot và artifacts theo run giúp truy ngược kết quả về dữ liệu và cấu hình. Đây là kiến trúc mục tiêu, chưa phải hệ thống ML đã chạy.
 
 Từ các lớp lớn, ta xác định module cụ thể đảm nhận từng công việc.
 
@@ -400,13 +405,13 @@ Những module này phải tạo đủ bằng chứng cho thiết kế thực ng
 
 **06:40–08:05 · Slide 08 — Thiết kế thực nghiệm và phương pháp đánh giá**
 
-Ma trận thực nghiệm gồm hai họ mạng nhân hai đầu ra: single-step và direct năm bước. Mỗi ô là mười trial Optuna, tổng tối đa bốn mươi. Recursive dùng lại model single-step. Huấn luyện dùng AdamW, objective MSE scaled, tối đa năm mươi epoch với early stopping patience mười. Validation chọn cấu hình và checkpoint; chỉ sau khi khóa lựa chọn mới mở test. Hai baseline là Linear Regression và ARIMA A. LR nhìn cửa sổ sáu mươi Close; ARIMA fit toàn train với order năm, một, không và không drift. Khác biệt lịch sử này cần công bố. Rolling-origin dự báo năm bước tại t; sang t cộng một mới được thêm actual vừa xuất hiện. ARIMA chỉ cập nhật trạng thái bằng refit false, không học lại tham số. Trước metric, giá phải inverse-scale về USD. MAE là độ lệch tuyệt đối trung bình; RMSE nhạy hơn với lỗi lớn. MSE giá gốc dùng USD bình phương, khác loss scaled. Báo từng bước và tổng hợp; chưa có kết quả để xác định model thắng.
+Ma trận thực nghiệm gồm hai họ mạng nhân hai đầu ra: single-step và direct năm bước. Mỗi ô là mười trial Optuna, tổng tối đa bốn mươi. Recursive dùng lại model single-step. Huấn luyện dùng AdamW, objective MSE scaled, tối đa năm mươi epoch với early stopping patience mười. Validation chọn cấu hình và checkpoint; chỉ sau khi khóa lựa chọn mới mở test. Hai baseline là Linear Regression và ARIMA A. LR nhìn cửa sổ sáu mươi Close; ARIMA fit toàn train với order năm, một, không và không drift. Khác biệt lịch sử này cần công bố. Rolling-origin dự báo năm bước tại t; sang t cộng một mới được thêm actual vừa xuất hiện. ARIMA chỉ cập nhật trạng thái bằng refit false, không học lại tham số. Trước metric, giá phải inverse-scale về USD. MAE là độ lệch tuyệt đối trung bình; RMSE nhạy hơn với lỗi lớn. MSE giá gốc dùng USD bình phương, khác loss scaled. Báo từng bước và tổng hợp; chưa có kết quả để xác định model thắng. Mục tiêu nghiên cứu là MAPE dưới năm phần trăm, R bình phương trên không phẩy tám mươi lăm, DA trên năm mươi lăm phần trăm và Deep Learning vượt baseline. Đây là mục tiêu cần kiểm chứng, chưa phải kết quả thực nghiệm. Nếu không đạt hoặc thua baseline, nhóm vẫn báo cáo kết quả thực tế và phân tích nguyên nhân.
 
 Để tạo được evidence đó, dự án cần các mốc triển khai và kiểm soát rủi ro.
 
 **08:05–09:00 · Slide 09 — Kế hoạch triển khai và quản lý rủi ro**
 
-Các công việc được gắn với sản phẩm bàn giao cụ thể. Khảo sát nghiệp vụ và chốt phạm vi tạo phiếu đăng ký cùng tình huống sử dụng. Chuẩn bị dữ liệu phải có snapshot hoặc mẫu thật và mô tả trường. Thiết kế đánh giá tạo kịch bản test cùng giao thức so sánh. Baseline cần tạo kết quả làm mốc. Giải pháp tối thiểu phải có luồng xử lý hoàn chỉnh và Notebook demo. Hiện tài liệu và config đã có nhưng chưa có evidence hoàn thành các đầu việc ML. Leakage có thể làm sai số tốt giả nên cần kiểm split và scaler. Overfit được theo dõi qua validation và early stopping. API lỗi hoặc dữ liệu bị sửa cần snapshot có hash; biến động chế độ thị trường cần được phân tích như giới hạn mô hình.
+Các công việc được gắn với sản phẩm bàn giao cụ thể. Khảo sát nghiệp vụ và chốt phạm vi tạo phiếu đăng ký cùng tình huống sử dụng. Chuẩn bị dữ liệu phải có snapshot hoặc mẫu thật và mô tả trường. Thiết kế đánh giá tạo kịch bản test cùng giao thức so sánh. Baseline cần tạo kết quả làm mốc. Core được triển khai trước, gồm dữ liệu, LSTM single-step, LR và ARIMA, Optuna, đánh giá và Notebook. Required Extensions triển khai sau, gồm dự báo năm phiên bằng Recursive và Direct cùng so sánh 1D-CNN. Cả hai giai đoạn đều bắt buộc hoàn thành. Hiện tài liệu và config đã có nhưng chưa có evidence hoàn thành các đầu việc ML. Leakage có thể làm sai số tốt giả nên cần kiểm split và scaler. Overfit được theo dõi qua validation và early stopping. API lỗi hoặc dữ liệu bị sửa cần snapshot có hash; biến động chế độ thị trường cần được phân tích như giới hạn mô hình.
 
 Cuối cùng, đề tài đã xác lập được gì và còn cần chứng minh gì?
 
