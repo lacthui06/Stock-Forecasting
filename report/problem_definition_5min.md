@@ -1,273 +1,193 @@
 ---
 marp: true
 paginate: true
+theme: gaia
+_class: lead
+backgroundColor: #f4f7f3
+color: #102733
 ---
 
-## DEFINE / 01 · PROJECT NAME & PROBLEM
+## DEFINE / 01 · TÊN ĐỀ TÀI & VẤN ĐỀ
 
-# Dự đoán giá cổ phiếu đa bước
+# Dự báo giá cổ phiếu NVDA
+**Multi-Step Stock Price Forecasting với LSTM & 1D-CNN**
 
-NVDA · LSTM và 1D-CNN · Multi-step Stock Forecasting
+### Vấn đề cần giải quyết
+- Cổ phiếu NVDA biến động phi tuyến cực mạnh theo làn sóng AI bán dẫn.
+- Dự đoán 1 ngày ($t+1$) là quá ngắn, không đủ để nhà đầu tư lập kế hoạch giao dịch theo tuần.
+- Các công thức toán học đường thẳng truyền thống (Linear, MA) bị đuối sức.
 
-PROBLEM
+### Mục tiêu cụ thể
+- Nhận diện 60 ngày giá Close quá khứ $\to$ Dự báo đồng thời 5 ngày giá đóng cửa kế tiếp (USD).
+- Đấu trường 4 mô hình: So sánh trực diện Baseline (LR, ARIMA) vs Deep Learning (LSTM, 1D-CNN).
 
-Người dùng cần tham khảo diễn biến giá cả tuần; dự báo một ngày chưa thể hiện chuỗi 5 phiên.
-
-
-
-MỤC TIÊU
-
-Từ 60 giá Close quá khứ, dự báo 5 giá Close tiếp theo và kiểm chứng so với LR, ARIMA.
-
-
-
-
-
-Câu hỏi: học sâu có giảm sai số đa bước so với baseline?
-
-Trạng thái: thiết kế đề xuất · Chưa có kết quả thực nghiệm
-
-
-
-<!-- 25 giây. Lời nói: Tên đề tài là dự đoán giá cổ phiếu đa bước với LSTM và CNN trên NVDA. Vấn đề là người dùng muốn tham khảo diễn biến cả tuần giao dịch thay vì một ngày. Mục tiêu cụ thể là dùng 60 giá đóng cửa quá khứ dự báo năm phiên tiếp theo, rồi kiểm chứng với Linear Regression và ARIMA. Đây là thiết kế đề xuất, chưa có kết quả thực nghiệm. -->
+<!-- 25 giây. Lời nói: Kính chào thầy cô và hội đồng. Tên đề tài là dự đoán giá cổ phiếu đa bước trên mã NVIDIA (NVDA). Vấn đề là cổ phiếu NVDA biến động rất mạnh theo làn sóng AI; dự đoán một ngày không đủ để lập kế hoạch tuần, còn các công thức đường thẳng truyền thống thì không bắt được tính phi tuyến. Mục tiêu là dùng 60 ngày quá khứ dự báo đồng thời 5 ngày tiếp theo. -->
 
 ---
-## DEFINE / 02 · TARGET USER · INPUT / OUTPUT · CORE FEATURES
 
-# Ai dùng? Nhập gì? Nhận gì?
+## DEFINE / 02 · NGƯỜI DÙNG & HỢP ĐỒNG VÀO / RA
 
-TARGET USER
+# Đúng người dùng · Rõ Vào / Ra
 
-Nhà đầu tư cá nhân và chuyên viên phân tích định lượng.
+### Đối tượng sử dụng
+- **Nhà đầu tư cá nhân (lướt sóng ngắn hạn)**: Cần dải giá kỳ vọng để đặt lệnh Take-profit / Stop-loss.
+- **Chuyên viên định lượng (Quant Analyst)**: Cần pipeline chuẩn mực làm tín hiệu giao dịch.
 
+### Hợp đồng Vào / Ra (Input & Output)
+- **Đầu vào (Input)**: 60 ngày giá đóng cửa (`Close`) gần nhất của NVDA.
+- **Xử lý (Process)**: Cắt cửa sổ trượt Tensor $X \in (B, 60, 1) \to Y \in (B, 5)$.
+- **Đầu ra (Output)**: 5 giá đóng cửa liên tiếp tính bằng USD kèm đồ thị trực quan và xu hướng.
 
-
-CORE FEATURES
-
-Tải/cache dữ liệu · Dự báo 5 phiên · So sánh 4 mô hình · Xuất biểu đồ và metrics.
-
-
-
-
-
-INPUT60 CloseNVDA · nến ngày
-
-→MODEL60 → 5Hồi quy đa bước
-
-→OUTPUT5 CloseNgày giao dịch + USD
-
-
-
-Tensor X: (B, 60, 1) → Y: (B, 5) · B là số mẫu trong batch.
-
-
-
-<!-- 35 giây. Lời nói: Người dùng là nhà đầu tư cá nhân và chuyên viên phân tích. Đầu vào ban đầu chỉ là giá Close theo ngày của NVDA, không dùng tin tức hay toàn bộ OHLCV. Sau 60 phiên đã quan sát, đầu ra là năm cặp ngày giao dịch và giá USD, không phải lệnh mua bán. Các chức năng chính gồm tải dữ liệu có cache, dự báo đa bước, so sánh bốn mô hình và xuất đồ thị cùng chỉ số. Tensor đầu vào là B, 60, 1 và đầu ra là B, 5. -->
+<!-- 35 giây. Lời nói: Người dùng là nhà đầu tư cá nhân và chuyên viên định lượng. Đầu vào là 60 ngày giá đóng cửa liên tiếp của NVDA, tương đương 3 tháng giao dịch. Đầu ra là một vector gồm đúng 5 giá đóng cửa cho 5 phiên làm việc tiếp theo bằng tiền USD, kèm biểu đồ trực quan để người dùng nhìn thấy ngay xu hướng thay vì chỉ đọc các con số rời rạc. -->
 
 ---
-## DEFINE / 03 · TECH CONSTRAINTS · EVALUATION / SUCCESS
 
-# Ràng buộc và tiêu chí thành công
+## DEFINE / 03 · TÍNH NĂNG CỐT LÕI
 
-TECH CONSTRAINTS
+# Năm tính năng cốt lõi
 
-Python / PyTorch; CPU hoặc GPU.Yahoo Finance · dự kiến 5 năm.Split thời gian 70 / 15 / 15.Scaler chỉ fit trên Train.
+1. **Tự động tải & Lưu cache CSV**: Kéo nến ngày từ Yahoo Finance, lưu đệm đĩa cứng để chạy offline.
+2. **Cắt lát Sliding Window**: Tự động gom cứ 60 ngày quá khứ làm đầu vào và 5 ngày kế tiếp làm nhãn.
+3. **Dự báo đa bước đồng thời**: Direct Multi-Output xuất cùng lúc 5 ngày, tránh sai số tích lũy dây chuyền.
+4. **Đấu trường 4 mô hình**: Chạy song song Linear Regression, ARIMA, Vanilla LSTM và 1D-CNN.
+5. **Bảng chấm điểm minh bạch**: Đo độ lệch giá thực tế bằng tiền USD và tỷ lệ đoán đúng chiều tăng/giảm.
 
-
-
-EVALUATION CRITERIA
-
-MAE, RMSE (USD), MAPE, R².Directional Accuracy so với Close tại t.Đo từng horizon và tổng hợp.Ghi thời gian huấn luyện.
-
-
-
-
-
-SUCCESS: trả đúng 5 giá hợp lệ, tái lập được.Chỉ nói DL cải thiện khi MAE và RMSE thấp hơn baseline tốt nhất.
-
-
-
-<!-- 35 giây. Lời nói: Ràng buộc gồm Python PyTorch, phần cứng CPU hoặc GPU, dữ liệu dự kiến năm năm và chia theo thời gian 70, 15, 15. Scaler chỉ fit trên train. Tiêu chí chức năng là trả đúng năm giá hợp lệ và tái lập được từ bộ artifact. Đánh giá gồm các metric giá và hướng, riêng từng horizon lẫn tổng hợp. Muốn kết luận học sâu cải thiện, MAE và RMSE phải thấp hơn baseline tốt nhất theo từng chỉ số trên test độc lập. Nếu không đạt, vẫn báo cáo kết quả và bác bỏ giả thuyết cải thiện, không sửa tiêu chí theo test. -->
+<!-- 35 giây. Lời nói: Hệ thống có 5 tính năng cốt lõi: thứ nhất là tự động kéo và cache dữ liệu để chạy offline; thứ hai là cắt cửa sổ trượt 60 ngày sang 5 ngày; thứ ba là xuất đồng thời 5 ngày để không bị tích tụ sai số; thứ tư là chạy song song 4 mô hình đối chứng; và thứ năm là bảng chấm điểm sai số tính bằng USD cùng tỷ lệ đoán đúng xu hướng. -->
 
 ---
-## DESIGN / 04 · SYSTEM / MODEL ARCHITECTURE
 
-# Kiến trúc hệ thống và mô hình
+## DEFINE / 04 · RÀNG BUỘC KỸ THUẬT & TIÊU CHUẨN THÀNH CÔNG
 
-DATAValidateCache · split · scale
+# Kỷ luật kỹ thuật & Tiêu chuẩn nghiệm thu
 
-→MODELSTrain / PredictChọn bằng Validation
+### Kỷ luật chống rò rỉ dữ liệu (No Data Leakage)
+- Chia thời gian tuần tự: **70% Train $\to$ 15% Validation $\to$ 15% Test** (Cấm tuyệt đối lệnh shuffle).
+- Scaler độc lập: `MinMaxScaler` **chỉ được fit trên tập Train**.
+- Tôn trọng lịch sàn NASDAQ: Không tự ý nội suy sinh giá ma ngày nghỉ lễ.
 
-→OUTPUTEvaluateGiá USD · plots · logs
+### Tiêu chuẩn nghiệm thu thành công (Test Set)
+- **MAPE $\le 3 - 5\%$**: Sai lệch phần trăm dưới 5%.
+- **$R^2 > 0.85$**: Độ khớp xu hướng giải thích trên 85% phương sai.
+- **Directional Accuracy $> 55\%$**: Đoán đúng chiều tăng/giảm tốt hơn tung đồng xu 50/50.
+- **100% số liệu thực**: Trích xuất trực tiếp từ run log trong `outputs/runs/`, cấm điền số ảo.
 
-
-
-LSTM(B,60,1) → LSTM 2 tầng, hidden 64 → Linear → (B,5)
-
-1D-CNN(B,1,60) → Conv1D → Pool → Linear → (B,5)
-
-BASELINESLinear Regression và ARIMA; cùng mốc dự báo trên Test.
-
-
-
-Kiến trúc dự kiến; CNN chuyển trục đầu vào trước Conv1D.
-
-
-
-<!-- 35 giây. Lời nói: Kiến trúc tách dữ liệu, mô hình và đầu ra đánh giá. LSTM nhận tensor B, 60, 1, đi qua hai tầng LSTM với hidden 64 rồi chiếu về năm bước. CNN cần đổi trục thành B, 1, 60 để convolve trên thời gian, sau đó pooling và linear cũng trả năm bước. Hai baseline là Linear Regression và ARIMA. Mọi mô hình phải dự báo tại cùng forecast origins trên test. Đây là thiết kế, các module chưa được triển khai trong repository. -->
+<!-- 35 giây. Lời nói: Ràng buộc kỹ thuật quan trọng nhất là chống rò rỉ dữ liệu: chia tập 70-15-15 theo thời gian không shuffle, Scaler chỉ fit trên Train. Về tiêu chí thành công, mô hình phải đạt MAPE dưới 5 phần trăm, R2 trên 0.85 và đoán đúng hướng trên 55 phần trăm. Đặc biệt, Deep Learning phải thắng Baseline trên tập Test và toàn bộ số liệu phải lấy từ file log thực tế, cấm điền số ảo. -->
 
 ---
-## DESIGN / 05 · MODULES / FOLDER STRUCTURE
 
-# Module rõ trách nhiệm
+## DESIGN / 05 · KIẾN TRÚC MÔ HÌNH ĐỐI CHỨNG
 
-config/Cấu hình ticker, lookback, horizon, model, training.
+# Một hệ thống · Bốn mô hình đối chứng
 
-src/data/data_loader.py: tải/cache; dataset.py: split/scale/window.
+### Đấu trường kiểm chứng giá trị thực tế của AI
+- **Baseline 1 (Linear Regression)**: Mức sàn tối thiểu (Nếu AI không thắng nổi đường thẳng thì AI vô nghĩa).
+- **Baseline 2 (ARIMA)**: Mô hình tự hồi quy sai phân cổ điển (Chuẩn học thuật kinh điển).
+- **Core DL 1 (Vanilla LSTM)**: 2 tầng LSTM (hidden 64, dropout 0.2), cổng nhớ dài hạn nắm bắt xu hướng lớn.
+- **Core DL 2 (1D-CNN)**: Bộ lọc tích chập 1 chiều quét nhanh các mẫu hình biến động nến cục bộ.
 
-src/models/baseline_lr.py · baseline_arima.py · lstm_model.py · cnn_model.py
+*Cả 4 mô hình đều nhận đầu vào 60 ngày và xuất ra 5 ngày trên cùng một tập Test độc lập.*
 
-src/utils/metrics.py: chỉ số; visualizer.py: đồ thị.
-
-scripts/ · tests/train / eval / predict; kiểm thử shape, cutoff, input lỗi.
-
-outputs/ · report/Run artifacts; HTML trình bày. Báo cáo chính: walkthrough.md.
-
-
-
-Các file Python nêu trên là cấu trúc đề xuất; hiện repo mới có khung và config.
-
-
-
-<!-- 25 giây. Lời nói: Tổ chức module theo trách nhiệm. Config quản lý tham số. Data chịu trách nhiệm tải cache, chia tập, scaler và window. Models tách bốn kiến trúc. Utils chứa metrics và đồ thị. Scripts điều phối train eval predict, tests kiểm tra shape và leakage. Outputs lưu artifact theo run, report chứa trình bày, còn walkthrough là báo cáo thực nghiệm chính. Tên file ở đây là cấu trúc dự kiến, không phải module đã có. -->
+<!-- 35 giây. Lời nói: Kiến trúc thiết kế đấu trường 4 mô hình: hai mô hình thống kê là Linear Regression làm mức sàn và ARIMA làm chuẩn cổ điển; hai mô hình học sâu là LSTM với cổng nhớ bắt phụ thuộc tuần tự, và 1D-CNN dùng bộ lọc tích chập trích xuất mẫu hình nến cục bộ với tốc độ cao. Cả 4 mô hình đều nhận đầu vào 60 ngày và xuất ra 5 ngày trên cùng một tập Test. -->
 
 ---
-## DESIGN / 06 · DATA FLOW · TRAINING PHASE
 
-# Training: học từ quá khứ
+## DESIGN / 06 · CẤU TRÚC THƯ MỤC & PHÂN HỆ
 
-01 · CHUẨN BỊYahoo Finance → CSV cache → kiểm tra ngày và Close.
+# Chia module theo đúng trách nhiệm
 
-02 · TIỀN XỬ LÝSplit thời gian → fit scaler trên Train → tạo window 60/5.
+```text
+Stock-Forecasting/
+├── config/             # default_config.yaml (quản lý tham số tập trung)
+├── data/               # raw/ (cache CSV) và processed/ (mảng windowed)
+├── src/
+│   ├── data/           # data_loader.py (tải cache) & dataset.py (split, scale, window)
+│   ├── models/         # baseline_lr, baseline_arima, lstm_model, cnn_model
+│   └── utils/          # metrics.py (tính sai số) & visualizer.py (vẽ đồ thị)
+├── scripts/            # train.py, eval.py, predict.py
+├── tests/              # test_data.py (chống leakage) & test_models.py (tensor shapes)
+└── outputs/            # runs/<run_id>/ (weights .pt, logs) & published/ (báo cáo)
+```
 
-03 · HUẤN LUYỆNTrain → chọn siêu tham số / checkpoint bằng Validation.
-
-04 · ĐÁNH GIÁChốt mô hình → Test độc lập → inverse scale → metrics.
-
-05 · LƯU ARTIFACTCheckpoint + scaler + config + cutoff + metrics theo run_id.
-
-
-
-Không để 5 nhãn của một cửa sổ vượt ranh giới tập.
-
-
-
-<!-- 35 giây. Lời nói: Training bắt đầu bằng tải dữ liệu, cache và kiểm tra chất lượng. Chia theo thời gian trước khi fit scaler và sinh cửa sổ. Mỗi nhãn năm ngày phải nằm trọn trong một tập. Có thể lấy lịch sử đầu vào từ tập trước nếu nó đã quan sát được tại mốc dự báo. Huấn luyện trên train và chọn siêu tham số bằng validation, dùng early stopping. Chỉ sau khi chốt mô hình mới đánh giá test, đổi về USD để tính metric. Lưu checkpoint cùng scaler, config, cutoff và metric để inference có thể dùng đúng bộ tương ứng. -->
+<!-- 25 giây. Lời nói: Cấu trúc dự án được phân chia sạch sẽ: thư mục config chứa tham số tập trung; thư mục src chia rõ thành data tiền xử lý, models chứa 4 kiến trúc độc lập, và utils chứa hàm đo lường và vẽ biểu đồ. Thư mục scripts cung cấp lệnh chạy dòng lệnh, và tests chứa các bài kiểm tra tự động trước khi chạy thật. -->
 
 ---
-## DESIGN / 07 · INFERENCE PHASE · API CONTRACT
 
-# Inference: dùng lại model đã chốt
+## DESIGN / 07 · LUỒNG DỮ LIỆU KHÉP KÍN
 
-INPUT60 phiên ≤ tKiểm tra dữ liệu
+# Luồng dữ liệu: Từ API đến Báo cáo
 
-→INFERENCEScale → Predicteval + no_grad
+```text
+[Yahoo Finance API] ──► 1. Tải 5 năm nến ngày NVDA
+         │
+         ▼
+[data/raw/NVDA_5y.csv] ──► 2. Lưu trữ đệm (Cache cục bộ chạy offline)
+         │
+         ▼
+[src/data/dataset.py] ──► 3. Chia tập 70/15/15 tuần tự ──► Fit Scaler chỉ trên Train
+         │
+         ▼
+[PyTorch DataLoader] ──► 4. Cắt trượt X (60 ngày) ➔ Y (5 ngày), Batch=32
+         │
+         ▼
+[4 Mô Hình (LR, ARIMA, LSTM, CNN)] ──► 5. Tính toán dự báo dải giá
+         │
+         ▼
+[outputs/runs/ & walkthrough.md] ──► 6. Inverse scale về USD ──► Xuất bảng số liệu & Đồ thị
+```
 
-→RESPONSE5 phiên > tInverse scale → USD
-
-
-
-Python API nội bộ — đề xuất
-
-predict(close_history, model_bundle)Trả: as_of, model_version, forecasts[{date, close_usd}].
-
-Lỗi: thiếu lịch sử · dữ liệu lỗi · artifact không khớp.
-
-
-
-Không refit scaler khi inference. Hiện chưa có HTTP service.
-
-
-
-<!-- 35 giây. Lời nói: Inference khác training: không học lại từ dữ liệu mới. Nhận 60 phiên ở hoặc trước cutoff, kiểm tra input, tải đúng checkpoint scaler rồi chạy eval và no_grad. Sau dự báo phải inverse transform và gán đúng năm phiên theo lịch sàn, không cộng năm ngày lịch. API nội bộ đề xuất là predict nhận lịch sử Close và model bundle, trả ngày cutoff, phiên bản mô hình và năm cặp ngày giá USD. Nếu thiếu dữ liệu, dữ liệu sai hay artifact không khớp, trả lỗi rõ ràng. Hiện chưa triển khai HTTP service; Yahoo Finance là nguồn dữ liệu bên ngoài. -->
-
----
-## DESIGN / 08 · LOGIC & EDGE CASES
-
-# Đầu vào lỗi phải có cách xử lý
-
-Dưới 60 phiênTừ chối dự báo; thông báo số phiên còn thiếu.
-
-NaN / Inf / Close ≤ 0Từ chối; yêu cầu kiểm tra nguồn, không tự tạo giá.
-
-Ngày trùng / sai thứ tựSắp xếp; bản ghi xung đột phải được xử lý trước.
-
-Cuối tuần / nghỉ lễDùng lịch phiên giao dịch; không nội suy ngày nghỉ.
-
-Split / cache cũ / model lỗiThống nhất điều chỉnh giá, kiểm tra timestamp và model bundle.
-
-
-
-Output phải có đúng 5 ngày tăng dần và 5 giá hữu hạn, dương.
-
-
-
-<!-- 25 giây. Lời nói: Các edge case được xử lý tường minh. Dưới 60 phiên thì từ chối. NaN, vô cực hoặc giá không dương phải kiểm tra nguồn, không tự điền bừa. Ngày được sắp xếp, nhưng bản ghi trùng xung đột cần xử lý trước khi chạy. Ngày nghỉ theo lịch sàn. Với chia tách cổ phiếu, phải nhất quán cách điều chỉnh giá. Cache có timestamp và checkpoint phải khớp scaler. Kiểm tra đầu ra đúng năm ngày, đúng thứ tự và giá hợp lệ. -->
+<!-- 35 giây. Lời nói: Luồng dữ liệu gồm 4 chặng: bắt đầu kéo nến từ Yahoo Finance và lưu cache CSV; chặng hai chia tập thời gian và fit scaler độc lập; chặng ba cắt cửa sổ trượt đóng gói DataLoader; chặng bốn đưa vào mô hình tính toán, đổi về tiền USD và xuất báo cáo. Mọi kết quả đều sinh ra gói artifact hoàn chỉnh để ai clone về cũng tái lập được. -->
 
 ---
-## DESIGN / 09 · SECURITY · PERFORMANCE · READABILITY
 
-# An toàn, hiệu quả và dễ bảo trì
+## DESIGN / 08 · HAI GIAI ĐOẠN VẬN HÀNH
 
-SECURITY
+# Huấn luyện & Dự đoán: Quy trình tách biệt
 
-Whitelist ticker; giới hạn input.Chỉ nạp checkpoint tin cậy.Giới hạn đường dẫn artifact.HTTP mở rộng: auth + rate limit.
+### Giai đoạn 1: Huấn Luyện (Training Phase)
+1. **Sanity Check**: Ép overfit trên 1 batch nhỏ (32 mẫu) trước để loại trừ bug code.
+2. **Bộ tối ưu AdamW & CosineAnnealingLR**: Điều tiết tốc độ học êm dịu, chống bẫy overfitting.
+3. **Early Stopping**: Tự động ngắt cầu dao nếu sau 10 vòng mà tập Validation không cải thiện.
+4. **Lưu Checkpoint**: Lưu phiên bản mô hình có val_loss thấp nhất vào `best_model.pt`.
 
+### Giai đoạn 2: Dự Đoán (Inference Phase)
+1. Nạp tệp trọng số xuất sắc nhất `best_model.pt`.
+2. Đưa chuỗi 60 ngày giá gần nhất vào mô hình (chế độ `torch.no_grad()`).
+3. Dùng `scaler.inverse_transform` đổi kết quả ngược về giá tiền USD.
+4. Xuất bảng giá 5 ngày tiếp theo và vẽ đồ thị nối tiếp.
 
-
-PERFORMANCE
-
-Cache dữ liệu; load model một lần.Batch inference, eval/no_grad.Đo latency p50/p95 và train time.Ghi rõ phần cứng benchmark.
-
-
-
-READABILITY
-
-Một module, một trách nhiệm.Config tập trung; type/shape rõ.Thông báo lỗi có ý nghĩa.Test ranh giới và input lỗi.
-
-
-
-
-
-Chưa benchmark: không tuyên bố tốc độ hoặc độ chính xác đã đạt.
-
-
-
-<!-- 25 giây. Lời nói: Thiết kế bảo mật giới hạn ticker, kích thước input và đường dẫn artifact, chỉ nạp checkpoint tin cậy, không nhận pickle tùy ý. Nếu có HTTP service thì cần xác thực và rate limit. Hiệu năng dùng cache, tải model một lần và batch inference; đo p50 p95 cùng thời gian train trên phần cứng công bố. Về readability, module có trách nhiệm riêng, cấu hình tập trung, shape rõ và thông báo lỗi có ý nghĩa. Chưa benchmark nên không tuyên bố nhanh hơn. -->
+<!-- 35 giây. Lời nói: Hệ thống tách rõ 2 giai đoạn: Huấn luyện bắt buộc có bước Sanity check overfit trên 1 batch trước để phát hiện lỗi kiến trúc sớm, dùng AdamW và Early stopping phanh tự động khi mô hình học vẹt. Giai đoạn dự đoán chỉ nạp checkpoint tốt nhất, nhận 60 ngày gần nhất và tính toán một lượt để xuất 5 ngày giá USD mà không cần train lại. -->
 
 ---
-## DESIGN / 10 · MILESTONES & TECH RISKS
 
-# Kế hoạch và rủi ro kỹ thuật
+## DESIGN / 09 · CỘT MỐC & QUẢN TRỊ RỦI RO
 
-TUẦN 1Dữ liệu + split/scaler đúng + baseline chạy được.
+# Ba tuần triển khai & Giải quyết rủi ro
 
-TUẦN 2LSTM / CNN + chọn checkpoint bằng Validation.
+### Lộ trình 3 tuần (Milestones)
+- **Tuần 1**: Kéo dữ liệu NVDA, lưu cache CSV, EDA kiểm định dừng ADF, dựng baseline LR và ARIMA.
+- **Tuần 2**: Cài đặt LSTM & 1D-CNN, chạy Sanity check 1-batch, huấn luyện với Early Stopping.
+- **Tuần 3**: Đánh giá đa bước chi tiết từng ngày ($t+1 \dots t+5$), phân tích phần dư, hoàn thiện báo cáo living doc.
 
-TUẦN 3Test + phân tích lỗi + demo và artifact tái lập.
+### Quản trị rủi ro kỹ thuật (Tech Risks)
+- **Lỗi mạng API yfinance** $\to$ Cache CSV cục bộ, chạy hoàn toàn offline.
+- **Học vẹt (Overfitting)** $\to$ Tầng Dropout 0.2, Weight Decay $1e-2$, Early Stopping.
+- **Tích tụ sai số đa bước** $\to$ Kiến trúc Direct Multi-Output dự báo đồng thời 5 ngày.
+- **Rò rỉ dữ liệu** $\to$ Cấm shuffle, Scaler fit-on-train only.
 
+<!-- 25 giây. Lời nói: Kế hoạch triển khai gói gọn trong 3 tuần: Tuần một làm dữ liệu, EDA và dựng baseline. Tuần hai xây dựng LSTM, 1D-CNN và huấn luyện. Tuần ba đánh giá đa bước chi tiết và đóng gói bàn giao. Bốn rủi ro lớn gồm lỗi mạng API, overfitting, tích tụ sai số và rò rỉ dữ liệu đều có giải pháp kỹ thuật phòng ngừa triệt để. -->
 
+---
 
-API lỗi / rate limitCache có timestamp; retry có giới hạn.
+## SUMMARY / 10 · TỔNG KẾT & HỎI ĐÁP
 
-Leakage / overfitTest cutoff/window; early stopping trên Validation.
+# Tổng kết đề tài & Sẵn sàng trao đổi (Q&A)
 
-Thị trường đổi chế độPhân tích sai số theo giai đoạn; nêu giới hạn.
+### Ba thông điệp cốt lõi
+1. **Bài toán thực tế**: Dự báo dải giá 5 ngày liên tiếp cho cổ phiếu NVDA phục vụ kế hoạch giao dịch tuần.
+2. **Kỷ luật dữ liệu**: 100% không rò rỉ thông tin (No Data Leakage), scaler fit-on-train và chia tập theo thời gian.
+3. **So sánh sòng phẳng**: Kiểm chứng thực tế xem Deep Learning có thắng được toán thống kê truyền thống hay không.
 
+### Cảm ơn Thầy Cô & Hội Đồng!
+*Nhóm sẵn sàng lắng nghe nhận xét và trả lời các câu hỏi phản biện.*
 
-
-Bàn giao: pipeline tái lập + dự báo 5 phiên + so sánh thực nghiệm.
-
-
-
-<!-- 25 giây. Lời nói: Tuần một hoàn thành dữ liệu, chia tập và baseline. Tuần hai hoàn thành LSTM CNN và chọn checkpoint bằng validation. Tuần ba test, phân tích lỗi và đóng gói demo. Rủi ro API được giảm bằng cache có timestamp và retry giới hạn, không lặng lẽ dùng cache quá cũ. Leakage được kiểm tra bằng cutoff window, overfit bằng early stopping. Thị trường đổi chế độ phải thể hiện qua phân tích lỗi theo giai đoạn. Sản phẩm cuối là pipeline tái lập, dự báo năm phiên và so sánh có bằng chứng. -->
+<!-- 20 giây. Lời nói: Tóm lại, đề tài giải quyết bài toán dự báo 5 ngày thiết thực cho NVDA, tuân thủ kỷ luật dữ liệu nghiêm ngặt và so sánh công bằng giữa thống kê với học sâu. Em xin kết thúc bài báo cáo tại đây và rất mong nhận được câu hỏi phản biện từ thầy cô. Em xin cảm ơn! -->

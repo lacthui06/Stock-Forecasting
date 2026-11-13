@@ -1,21 +1,126 @@
-const slides=[...document.querySelectorAll('.slide')],panel=document.querySelector('#notes-panel');
-let current=0,remaining=300,ticking=null,deadline=0,liveIndex=0;
-const reduced=matchMedia('(prefers-reduced-motion: reduce)');
-slides.forEach(s=>s.querySelectorAll('.reveal').forEach((e,i)=>e.style.setProperty('--order',Math.min(i,8))));
-slides.forEach((s,i)=>{const b=document.createElement('button');b.className='dot-button';b.setAttribute('aria-label',`Đến slide ${i+1}`);b.onclick=()=>show(i);document.querySelector('#dots').append(b);});
-function resize(){const toolbar=document.querySelector('#toolbar').getBoundingClientRect().height;document.documentElement.style.setProperty('--scale',Math.max(.1,Math.min((innerWidth-24)/1280,(innerHeight-toolbar-24)/720)));document.querySelector('#stage').style.top=`${(innerHeight-toolbar)/2}px`;}
-function animateStage(){const live=slides[current].querySelectorAll('[data-live]');live.forEach((e,i)=>e.classList.toggle('live',i===liveIndex%Math.max(1,live.length)));}
-function show(i){current=Math.max(0,Math.min(slides.length-1,i));slides.forEach((s,j)=>{s.classList.remove('active');s.querySelectorAll('.live').forEach(e=>e.classList.remove('live'));s.setAttribute('aria-hidden',String(!document.body.classList.contains('reading')&&j!==current));});void slides[current].offsetWidth;slides[current].classList.add('active');liveIndex=0;animateStage();document.querySelector('#count').textContent=`SLIDE ${String(current+1).padStart(2,'0')} / ${slides.length}`;document.querySelector('#prev').disabled=current===0;document.querySelector('#next').disabled=current===slides.length-1;document.querySelectorAll('.dot-button').forEach((b,j)=>{b.classList.toggle('active',j===current);b.setAttribute('aria-current',j===current?'step':'false');});document.querySelector('#progress').style.width=`${(current+1)/slides.length*100}%`;panel.textContent=slides[current].querySelector('.notes').textContent;history.replaceState(null,'',`#${current+1}`);if(document.body.classList.contains('reading'))slides[current].scrollIntoView({block:'start'});}
-setInterval(()=>{if(document.hidden||document.body.classList.contains('no-motion')||document.body.classList.contains('reading')||reduced.matches)return;liveIndex++;animateStage();},1800);
-function toggleNotes(){panel.hidden=!panel.hidden;document.querySelector('#notes').setAttribute('aria-pressed',String(!panel.hidden));}
-function toggleMotion(){const off=document.body.classList.toggle('no-motion');document.querySelector('#motion').setAttribute('aria-pressed',String(!off));document.querySelector('#motion').textContent=off?'Motion: OFF':'Motion: ON';}
-if(reduced.matches)toggleMotion();
-async function fullscreen(){try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{document.querySelector('#fullscreen').textContent='F11';}}
-function clock(){document.querySelector('#clock').textContent=`${String(Math.floor(remaining/60)).padStart(2,'0')}:${String(remaining%60).padStart(2,'0')}`;}
-function pause(){clearInterval(ticking);ticking=null;document.querySelector('#timer').textContent=remaining?'Tiếp tục':'Hết giờ';}
-document.querySelector('#timer').onclick=()=>{if(ticking){pause();return;}if(!remaining)return;deadline=Date.now()+remaining*1000;document.querySelector('#timer').textContent='Tạm dừng';ticking=setInterval(()=>{remaining=Math.max(0,Math.ceil((deadline-Date.now())/1000));clock();if(!remaining)pause();},200);};
-document.querySelector('#reset').onclick=()=>{pause();remaining=300;clock();document.querySelector('#timer').textContent='Bắt đầu';};
-document.querySelector('#prev').onclick=()=>show(current-1);document.querySelector('#next').onclick=()=>show(current+1);document.querySelector('#notes').onclick=toggleNotes;document.querySelector('#fullscreen').onclick=fullscreen;document.querySelector('#replay').onclick=()=>show(current);document.querySelector('#motion').onclick=toggleMotion;
-document.querySelector('#reading').onclick=()=>{const on=document.body.classList.toggle('reading');document.querySelector('#reading').setAttribute('aria-pressed',String(on));document.querySelector('#reading').textContent=on?'Slide':'Đọc';show(current);resize();};
-addEventListener('keydown',e=>{if(e.altKey||e.ctrlKey||e.metaKey||(e.target.closest('button')&&[' ','Enter'].includes(e.key)))return;if(['ArrowRight','ArrowDown','PageDown',' '].includes(e.key)){if(document.body.classList.contains('reading')&&['ArrowDown','PageDown',' '].includes(e.key))return;e.preventDefault();show(current+1);}if(['ArrowLeft','ArrowUp','PageUp'].includes(e.key)){if(document.body.classList.contains('reading')&&['ArrowUp','PageUp'].includes(e.key))return;e.preventDefault();show(current-1);}if(e.key==='Home')show(0);if(e.key==='End')show(slides.length-1);if(e.key.toLowerCase()==='n')toggleNotes();if(e.key.toLowerCase()==='f')fullscreen();if(e.key.toLowerCase()==='r')show(current);if(e.key.toLowerCase()==='m')toggleMotion();if(e.key==='Escape'){panel.hidden=true;document.querySelector('#notes').setAttribute('aria-pressed','false');}});
-addEventListener('resize',resize);addEventListener('hashchange',()=>show((parseInt(location.hash.slice(1),10)||1)-1));resize();show((parseInt(location.hash.slice(1),10)||1)-1);
+const slides = [...document.querySelectorAll('.slide')];
+let current = 0;
+let liveIndex = 0;
+const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+
+// Setup animation cascade order
+slides.forEach(s => s.querySelectorAll('.reveal').forEach((e, i) => e.style.setProperty('--order', Math.min(i, 8))));
+
+// Generate dots
+const dotsContainer = document.querySelector('#dots');
+if (dotsContainer) {
+  slides.forEach((s, i) => {
+    const b = document.createElement('button');
+    b.className = 'dot-button';
+    b.setAttribute('aria-label', `Đến slide ${i + 1}`);
+    b.onclick = () => show(i);
+    dotsContainer.append(b);
+  });
+}
+
+function resize() {
+  const toolbar = document.querySelector('#toolbar');
+  const tbHeight = toolbar ? toolbar.getBoundingClientRect().height : 0;
+  const scale = Math.max(0.1, Math.min((innerWidth - 32) / 1280, (innerHeight - tbHeight - 32) / 720));
+  document.documentElement.style.setProperty('--scale', scale);
+  const stage = document.querySelector('#stage');
+  if (stage) {
+    stage.style.top = `${(innerHeight - tbHeight) / 2}px`;
+  }
+}
+
+function animateStage() {
+  const live = slides[current].querySelectorAll('[data-live]');
+  live.forEach((e, i) => e.classList.toggle('live', i === liveIndex % Math.max(1, live.length)));
+}
+
+function show(i) {
+  current = Math.max(0, Math.min(slides.length - 1, i));
+  slides.forEach((s, j) => {
+    s.classList.remove('active');
+    s.querySelectorAll('.live').forEach(e => e.classList.remove('live'));
+    s.setAttribute('aria-hidden', String(j !== current));
+  });
+
+  // Force reflow for smooth animation replay
+  void slides[current].offsetWidth;
+  slides[current].classList.add('active');
+
+  liveIndex = 0;
+  animateStage();
+
+  const countEl = document.querySelector('#count');
+  if (countEl) countEl.textContent = `SLIDE ${String(current + 1).padStart(2, '0')} / ${slides.length}`;
+
+  const prevBtn = document.querySelector('#prev');
+  if (prevBtn) prevBtn.disabled = current === 0;
+
+  const nextBtn = document.querySelector('#next');
+  if (nextBtn) nextBtn.disabled = current === slides.length - 1;
+
+  document.querySelectorAll('.dot-button').forEach((b, j) => {
+    b.classList.toggle('active', j === current);
+    b.setAttribute('aria-current', j === current ? 'step' : 'false');
+  });
+
+  const progress = document.querySelector('#progress');
+  if (progress) progress.style.width = `${((current + 1) / slides.length) * 100}%`;
+
+  history.replaceState(null, '', `#${current + 1}`);
+}
+
+// Live element pulsation loop (every 1.8s)
+setInterval(() => {
+  if (document.hidden || reduced.matches) return;
+  liveIndex++;
+  animateStage();
+}, 1800);
+
+async function fullscreen() {
+  try {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen();
+    } else {
+      await document.documentElement.requestFullscreen();
+    }
+  } catch (err) {
+    // browser permission fallback
+  }
+}
+
+// Event Bindings
+const prevBtn = document.querySelector('#prev');
+if (prevBtn) prevBtn.onclick = () => show(current - 1);
+
+const nextBtn = document.querySelector('#next');
+if (nextBtn) nextBtn.onclick = () => show(current + 1);
+
+const replayBtn = document.querySelector('#replay');
+if (replayBtn) replayBtn.onclick = () => show(current);
+
+const fsBtn = document.querySelector('#fullscreen');
+if (fsBtn) fsBtn.onclick = fullscreen;
+
+// Keyboard navigation
+addEventListener('keydown', e => {
+  if (e.altKey || e.ctrlKey || e.metaKey || (e.target.closest('button') && [' ', 'Enter'].includes(e.key))) return;
+  if (['ArrowRight', 'ArrowDown', 'PageDown', ' '].includes(e.key)) {
+    e.preventDefault();
+    show(current + 1);
+  }
+  if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)) {
+    e.preventDefault();
+    show(current - 1);
+  }
+  if (e.key === 'Home') show(0);
+  if (e.key === 'End') show(slides.length - 1);
+  if (e.key.toLowerCase() === 'r') show(current);
+  if (e.key.toLowerCase() === 'f') fullscreen();
+});
+
+addEventListener('resize', resize);
+addEventListener('hashchange', () => show((parseInt(location.hash.slice(1), 10) || 1) - 1));
+
+// Initialize
+resize();
+show((parseInt(location.hash.slice(1), 10) || 1) - 1);
