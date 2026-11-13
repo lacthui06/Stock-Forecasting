@@ -132,7 +132,7 @@ flowchart TB
 **Ranh giới cứng (boundary rules):**
 1. Chỉ `datasets.splitting` tạo biên train/val/test; mọi module khác nhận `SplitManifest`.
 2. Chỉ `datasets.scaling` fit scaler, và chỉ trên train.
-3. Chỉ `evaluation` tính metric; `training` chỉ tính MSE scaled cho objective.
+3. Chỉ `evaluation` tính metrics giá gốc; `training` tính MSE scaled cho objective. Báo cáo chính MAE/RMSE/MAPE/R²/DA; artifact chi tiết thêm MSE USD² từng bước và gộp.
 4. Notebook không import `torch.nn`, `optuna`, `statsmodels` trực tiếp.
 5. Test split chỉ được mở sau khi `tuning` ghi cờ `selection_locked=true` trong provenance (DD-11, mục 4.4).
 
@@ -168,7 +168,7 @@ Chín module chức năng. Tên module là định danh Design (không phải re
 | **MOD-MODEL** Model zoo (`models`) | Định nghĩa kiến trúc và baseline | LSTM, CNN 1D, Linear Regression, ARIMA(5,1,0); factory | Siêu tham số, horizon | Đối tượng model | MOD-PREP (schema) | F03, F08, F09 |
 | **MOD-TRAIN** Training & Tuning (`training`) | Huấn luyện, Optuna, early stopping, checkpoint | `fit`, 4 study, `BudgetGuard`, lưu/nạp checkpoint, đo thời gian | `WindowDataset` train/val, search space | `models/*.pt`, `tuning/*.jsonl`, loss history, `selection_manifest.json` | MOD-MODEL, MOD-PREP, MOD-FOUND | F03, E04, E10, D04 |
 | **MOD-INFER** Inference (`predict`) | Dự báo single/recursive/direct, backtest, future | Rolling-origin, cohort chung, inverse-scale, bảng dài | Model, scaler, chuỗi, manifest | `predictions/*.csv` | MOD-MODEL, MOD-PREP, MOD-TRAIN (checkpoint) | F04, F07, F09, E05, E08, E09 |
-| **MOD-EVAL** Evaluation & Reporting (`evaluation`) | Metrics, so sánh, residual, biểu đồ | MAE/MSE/RMSE/MAPE/R²/DA; error theo step; 9 biểu đồ | Prediction CSV, Close đã làm sạch, loss history | `metrics/*.csv\|json`, `plots/*.png` | MOD-FOUND (không phụ thuộc MOD-MODEL/TRAIN) | F05, F06, F08, E06, E07 |
+| **MOD-EVAL** Evaluation & Reporting (`evaluation`) | Metrics, so sánh, residual, biểu đồ | MAE/RMSE/MAPE/R²/DA báo cáo; MSE USD² chi tiết; error theo step; 9 biểu đồ | Prediction CSV, Close đã làm sạch, loss history | `metrics/*.csv\|json`, `plots/*.png` | MOD-FOUND (không phụ thuộc MOD-MODEL/TRAIN) | F05, F06, F08, E06, E07 |
 | **MOD-ORCH** Orchestration & Demo (`pipeline.py`, `notebooks/`) | Điều phối stage và trình diễn | CLI các stage; Notebook EDA và Demo | Config, artifact | Run hoàn chỉnh; notebook hiển thị | Tất cả | F10, E11, D07, D08 |
 
 **Phân định tránh chồng lấn**
@@ -393,7 +393,7 @@ Confirmed: chia trước EDA; sau cleaning giữ ngày biên, cập nhật count
 
 **Quy tắc leakage thực thi trong flow:** không shuffle chuỗi trước split; scaler/imputer/feature selection chỉ fit ở train; test không dùng cho chọn siêu tham số/checkpoint/policy; Recursive không đọc actual trong horizon; rolling-origin chỉ thêm actual **sau** khi origin chuyển tiếp.
 
-**DD-04 Confirmed:** thiết kế chia hai lượt cũ được thay bằng khóa biên ngày một lần trước EDA. DEFINE §4.2–4.3 cần đồng bộ bằng plan tài liệu riêng trước implementation; không gọi việc dời split là hiệu chỉnh nhỏ.
+**DD-04 Confirmed:** khóa biên ngày một lần trước EDA, không chia lại sau cleaning; DEFINE §4.2–4.3 đã được đồng bộ theo quyết định human.
 
 ---
 
@@ -407,6 +407,8 @@ Confirmed: chia trước EDA; sau cleaning giữ ngày biên, cập nhật count
 ## 5. Interface / APIs — Hợp đồng giao tiếp
 
 Dự án **không có HTTP API** (ngoài phạm vi, Define §5). Giao tiếp thực tế gồm: (a) gọi hàm giữa module, (b) file artifact, (c) gọi thư viện ngoài `yfinance`.
+
+**Confirmed phân vai metrics:** MAE/RMSE là hai chỉ số chính khi trình bày, bộ báo cáo đầy đủ gồm MAE/RMSE/MAPE/R²/DA. MSE giá gốc USD² lưu thêm theo từng step và tổng hợp; MSE scaled chỉ dùng training/validation, không so trực tiếp với MSE USD².
 
 **DD-08 Proposed:** scaler/LR JSON, DL state_dict + construction config; ARIMA cần cả history/state phù hợp và round-trip forecast test, không hứa params JSON là đủ. **DD-09:** prediction CSV dài theo DEFINE. **Q-11 Confirmed:** join Close tại origin từ dữ liệu đã khóa để tính DA; missing/nonunique join phải lỗi.
 
@@ -673,7 +675,7 @@ Ngân sách: tối đa 40 trial, 2000 trial-epoch (kiểm bởi `BudgetGuard`; v
 | Function | `compute_metrics(df: DF, *, origin_close: Series, by_step: bool = True) -> MetricResult` |
 | Input | Bảng dài đã join actual, và Close tại origin (cho DA) |
 | Output | `MetricResult(per_step: DF, aggregate: dict, n_origins: int, undefined: dict[str,str])` |
-| Logic | Với `e=y−p`: MAE; MSE; RMSE; MAPE=`100·mean(|e/y|)`; `R²_h=1−Σe²/Σ(y−ȳ_h)²`; DA=`100·mean(sign(y−c)==sign(p−c))` (`sign(0)=0`). Tổng hợp: MAE/MSE/RMSE/MAPE gộp N×H cặp (RMSE gộp = căn MSE gộp); **R² tổng = trung bình đều R² từng bước**; bước undefined → R² tổng undefined, ghi lý do. MAPE: bất kỳ `y=0` → undefined (không bỏ mẫu, không thêm epsilon); `y<0` → `DataQualityError` để review. DA step 1 là chính |
+| Logic | Với `e=y−p`: MAE; MSE USD² lưu chi tiết; RMSE; MAPE=`100·mean(|e/y|)`; `R²_h=1−Σe²/Σ(y−ȳ_h)²`; DA=`100·mean(sign(y−c)==sign(p−c))` (`sign(0)=0`). Tổng hợp: MAE/MSE/RMSE/MAPE gộp N×H cặp (RMSE gộp = căn MSE gộp); **R² tổng = trung bình đều R² từng bước**; bước undefined → R² tổng undefined, ghi lý do. MAPE: bất kỳ `y=0` → undefined (không bỏ mẫu, không thêm epsilon); `y<0` → `DataQualityError` để review. DA step 1 là chính |
 | Errors | `DataQualityError`, `ShapeError` |
 
 #### `src/evaluation/alignment.py`
@@ -770,6 +772,6 @@ Rủi ro bảo mật: không có xác thực hay dữ liệu nhạy cảm; cần
 - Q-08: Linear Regression dùng scaled window chưa được xác nhận riêng; giữ Proposed tại mục 5.7.
 - Q-09: ARIMA A đã chốt; cách serialization đủ state và tolerance so forecast cần kiểm ở M5, không chỉ lưu params JSON.
 - Q-13: sanity batch train/seed/loss/gradient/shape đã chốt; threshold và step budget phải được duyệt trước M4.
-- Objective scaled, epoch report index, interval_steps/n_min_trials của pruner, file schema/rounding và DD-10 vẫn Proposed nếu chưa được duyệt riêng; không tự coi tái cấu trúc DESIGN là duyệt toàn bộ chi tiết.
-- DEFINE §4.2–4.3 cần đồng bộ split trước EDA và biên ngày cố định theo quyết định mới nhất; plan patch riêng trước implementation. README/config/AGENTS/requirements và links roadmap cũng cần đồng bộ đúng phạm vi, không thay đổi trong lượt này.
+- Objective MSE scaled đã Confirmed; epoch report index, interval_steps/n_min_trials của pruner, file schema/rounding và DD-10 vẫn Proposed nếu chưa được duyệt riêng; không tự coi tái cấu trúc DESIGN là duyệt toàn bộ chi tiết.
+- DEFINE §4.2–4.3 đã đồng bộ split trước EDA và biên ngày cố định; metrics dùng MSE scaled cho training/validation, MAE/RMSE/MAPE/R²/DA cho báo cáo và MSE USD² cho artifact chi tiết. README/config/AGENTS/requirements và links roadmap cũng cần đồng bộ đúng phạm vi, không thay đổi trong lượt này.
 - Save/load scaler phải kiểm đầy đủ fitted state; Kaggle/Optuna resume phải kiểm sampler/RNG/runtime và tổng trial. Chưa có test/model evidence trong tài liệu thiết kế.

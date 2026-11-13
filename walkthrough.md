@@ -68,6 +68,9 @@ Trạng thái: repository hiện có khung thư mục và cấu hình; các modu
 ## 2. Phương pháp và thiết kế thí nghiệm
 
 ### 2.1. Phân tích khám phá dữ liệu (EDA)
+
+> **Xuân Thường bổ sung/chỉnh sửa — 2026-11-13:** Lấy dữ liệu → kiểm tối thiểu ngày/thứ tự → chia 70/15/15 và khóa biên ngày → EDA trên train → human duyệt policy → xử lý từng tập, giữ biên → scaling train-only → windows. Sau cleaning chỉ cập nhật số dòng/tỷ lệ thực, không kéo val/test sang train hoặc chia lại.
+
 Theo quy chuẩn tại [docs/time_series.md](docs/time_series.md):
 - **Phân rã chuỗi thời gian**: Decomposition (Trend, Seasonality, Residuals).
 - **Phân tích chu kỳ**: Boxplot biến động theo thứ trong tuần (Day-of-Week) và theo tháng (Monthly).
@@ -108,11 +111,13 @@ Input (B,1,60)
 ### 2.4. Quy trình huấn luyện & Tối ưu
 Theo quy chuẩn tại [docs/dl_training.md](docs/dl_training.md):
 - **Sanity Overfit Test**: Overfit 1 batch duy nhất trước khi huấn luyện toàn bộ.
-- **Loss Function**: `MSELoss` (hoặc `HuberLoss` chống nhiễu outlier).
-- **Optimizer**: `AdamW(lr=1e-3, weight_decay=1e-2)`.
+- **Loss Function / objective đã chốt**: `MSELoss` và validation MSE trên thang MinMax-scaled; không mặc định thay bằng HuberLoss.
+- **Optimizer**: AdamW; Optuna search lr `1e-4..1e-2` log, weight_decay `1e-6..1e-3` log, hidden/channels `{32,64,128}` theo DEFINE. Không dùng weight_decay cố định `1e-2` của bản cũ.
 - **LR Scheduler**: `CosineAnnealingLR`.
 - **Gradient Clipping**: `max_norm=1.0`.
-- **Early Stopping**: Giám sát `val_loss`, `patience=10`.
+- **Early Stopping**: Giám sát validation MSE scaled, `patience=10`, tối đa 50 epoch/trial.
+- **Ngân sách đã chốt**: 4 study × 10 trial: LSTM/CNN single-step và LSTM/CNN Direct-5, tổng tối đa 40 trial; Recursive dùng lại model single-step. Không dùng giới hạn 4 cấu hình/họ của prompt presentation trước khi được human sửa lại.
+- **Phân vai metrics — Xuân Thường xác nhận 2026-11-13**: MAE/RMSE USD là chỉ số chính trên slide; báo cáo đủ MAE/RMSE/MAPE/R²/DA. Lưu thêm MSE USD² sau inverse scaling trong bảng/artifact chi tiết từng bước và gộp. MSE scaled không phải sai số USD. Chưa có kết quả thực nghiệm.
 
 ---
 
@@ -124,7 +129,7 @@ Theo quy chuẩn tại [docs/dl_training.md](docs/dl_training.md):
 | Mô hình | Input Dim | Params | Test RMSE (USD) | Test MAE (USD) | Test MAPE (%) | Test $R^2$ | Directional Acc (%) | Train Time (s) |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Linear Regression** | $60$ | - | - | - | - | - | - | - |
-| **ARIMA** | $60$ | - | - | - | - | - | - | - |
+| **ARIMA** | Toàn train; cập nhật state tới origin | - | - | - | - | - | - | - |
 | **Vanilla LSTM** | $(60, 1)$ | - | - | - | - | - | - | - |
 | **1D-CNN** | $(60, 1)$ | - | - | - | - | - | - | - |
 

@@ -108,10 +108,10 @@ Target single-step là Close phiên t+1. Target multi-step là `[Close(t+1), ...
 | Step | Input | Processing | Output | Storage | Validation |
 |---|---|---|---|---|---|
 | 1 Collection | Request NVDA/5y/1d | Lấy OHLCV, Adj Close, actions; lưu metadata | Raw snapshot | data/raw/; run lưu reference/hash | Không rỗng, range/schema đúng |
-| 2 Validation | Raw | Kiểm tra ngày, numeric, missing, duplicate | Quality findings | run/eda/ | Liệt kê đầy đủ lỗi, không sửa raw |
-| 3 EDA & Cleaning Review | Raw/findings | Khảo sát trend, distribution, ACF/PACF, ADF nếu phù hợp; trình policy | Báo cáo EDA và quyết định human | run/eda/ | Không diễn giải ACF/ADF là bằng chứng giá chắc chắn dự báo được |
-| 4 Cleaning / Features | Policy đã duyệt | Làm sạch, chọn/tạo feature có tính nhân quả | Cleaned data, feature specification | run/data/ | Không dùng quan sát tương lai; thống kê học chỉ từ train |
-| 5 Splitting | Chuỗi có index | Khóa biên thời gian 70/15/15 | Split manifest | run/data/ | Target các tập không giao nhau |
+| 2 Minimal Validation | Raw | Chỉ kiểm tối thiểu schema ngày, thứ tự/index để chia tập; lỗi mơ hồ dừng trình human, chưa EDA | Index hợp lệ hoặc lỗi | run/data/ | Không khảo sát/phát triển policy trước split |
+| 3 Fixed Splitting | Index hợp lệ | Chia thời gian 70/15/15, khóa biên ngày trước EDA | Fixed split manifest | run/data/ | Không xáo trộn, không dời biên sau cleaning |
+| 4 EDA & Human Review | Train, fixed manifest | Quality findings, trend/distribution/ACF/PACF/ADF phù hợp trên train; human duyệt policy | EDA report và policy được duyệt | run/eda/ | Chưa sửa raw; không chọn policy bằng val/test |
+| 5 Cleaning / Features | Split data, policy đã duyệt | Xử lý từng tập theo policy nhân quả; giữ biên ngày, tái đếm, ghi gap | Cleaned data, feature spec, counts/change log | run/data/ | Train-only fitted state; không kéo val/test vào train; gap policy cần duyệt |
 | 6 Scaling | Train/val/test | Fit MinMaxScaler trên train; transform phần còn lại | Scaler, scaled data | run/preprocessing/ | State scaler khớp train; không clip test ngầm |
 | 7 Sequences | Scaled/history/split | Tạo window và nhãn theo thời gian | X, Y, origin/date metadata | run/data/ hoặc sinh khi chạy | Shape đúng, toàn bộ nhãn thuộc split |
 | 8 Training / Tuning | Train/val windows/config | Fit, Optuna, early stopping, checkpoint | Models, trials, loss history | run/models/, run/tuning/ | Không dùng test; nonfinite/failure ghi nhận |
@@ -120,7 +120,7 @@ Target single-step là Close phiên t+1. Target multi-step là `[Close(t+1), ...
 | 11 Evaluation | Giá gốc, aligned dates | Metrics, residuals, baseline comparison | Bảng metrics | run/metrics/ | Cùng origin/target/horizon |
 | 12 Visualization & Export | History/predictions/metrics | Biểu đồ, bảng, báo cáo | Deliverables | run/plots/, outputs/published/ | Không lệch ngày/đơn vị; provenance |
 
-Đây là thứ tự phụ thuộc; lỗi trong dữ liệu có thể buộc quay lại collection/review. Các thao tác học thống kê ở bước 3–4 chỉ thực hiện sau khi xác định train boundary, dù trình bày EDA trước bước xuất split manifest. Kiểm tra schema toàn bộ dữ liệu không phải quyền tuning trên test.
+Confirmed: phải chia và khóa biên ngày trước EDA. Sau cleaning chỉ cập nhật count/positions theo biên đã khóa, không chia lại 70/15/15. Kiểm tối thiểu trước split chỉ để xác nhận index/schema đọc được; kiểm chất lượng val/test không phải quyền chọn policy hoặc tuning trên test. Lỗi dữ liệu có thể buộc dừng trình human; không âm thầm đổi snapshot hoặc biên đánh giá.
 
 **Data leakage rules:** không shuffle chuỗi trước split; không fit scaler/imputer/feature selection trên val/test; không dùng test để chọn hyperparameters, checkpoint hoặc policy; không dùng feature có sẵn sau origin. ADF/ACF trên train chỉ hỗ trợ thiết kế, không tự xác định window tối ưu.
 
@@ -134,7 +134,7 @@ Sequence tại origin t: `X = [Close(t-59), ..., Close(t)]`; Y một bước là
 | Validation: 15% tiếp | Chọn trial/checkpoint, early stopping | Không cập nhật trọng số bằng val |
 | Test: 15% cuối | Đánh giá sau khóa thiết kế | Không tuning/refit tham số trên test |
 
-**Proposed rounding:** với N phiên hợp lệ theo policy đã duyệt, `n_train=floor(0.70N)`, `n_val=floor(0.15N)`, test nhận phần dư; lưu ngày biên thực tế. Không yêu cầu mỗi tập tự có thêm 60 phiên bị lãng phí: context có thể lấy từ quá khứ trước biên, nhưng mọi target trong một window phải nằm hoàn toàn trong split đích. Train window nhiều bước không vượt sang val; val không vượt sang test. Sau cleaning làm thay đổi index, phải tái kiểm tra manifest và ghi lại thay đổi.
+**Proposed rounding:** với N phiên có index hợp lệ trước EDA/cleaning, `n_train=floor(0.70N)`, `n_val=floor(0.15N)`, test nhận phần dư; lưu ngày biên thực tế. Không yêu cầu mỗi tập tự có thêm 60 phiên bị lãng phí: context có thể lấy từ quá khứ trước biên, nhưng mọi target trong một window phải nằm hoàn toàn trong split đích. Train window nhiều bước không vượt sang val; val không vượt sang test. Sau cleaning thay đổi index/count, giữ nguyên ngày biên train/validation/test; chỉ cập nhật count/positions, báo tỷ lệ thực và gap. Không kéo ngày thuộc validation/test sang train để bù số dòng.
 
 ## 4.4. Output Specification
 
@@ -258,7 +258,9 @@ Python/PyTorch theo project; không dùng đồng thời TensorFlow. yfinance co
 
 4 study là LSTM single-step, CNN single-step, LSTM direct-5, CNN direct-5. Recursive không có study thứ năm/sáu. Ngân sách tối đa 40 trial, 2000 trial-epoch trước early stopping/pruning, chưa tính huấn luyện cuối. Trial pruned/failed vẫn có record và không tự sinh trial bù vượt ngân sách. Pruning có thể bỏ cấu hình hội tụ chậm; không bảo đảm tối ưu toàn cục. Báo thời gian từng study, không gọi số trial bằng nhau là compute bằng nhau.
 
-**Proposed cụ thể hóa cần review:** MSELoss và validation objective trên thang MinMax-scaled; epoch report dùng index 1..50 nhất quán; MedianPruner n_startup_trials=5 (khác sampler startup=3), interval_steps=1, n_min_trials=1. Warmup của pruner không ngăn early stopping riêng. CNN channels search điều khiển lớp đầu C, lớp sau C/2 để khớp cơ sở [64,32]; không tự đổi mapping khi triển khai. Ghi giá trị lr trial là lr ban đầu, scheduler thay đổi lr trong epoch sau. Các lựa chọn này chưa được xem là Confirmed trước review bản DEFINE.
+**Confirmed — phân vai metrics:** dùng MSELoss và validation MSE trên thang MinMax-scaled để huấn luyện/chọn checkpoint; nhãn rõ `validation MSE — scaled`. Báo cáo chính: MAE, RMSE (USD), MAPE, R², DA; lưu thêm MSE USD² trên giá gốc trong artifact đánh giá chi tiết từng bước và tổng hợp. Trên slide nhấn MAE/RMSE, không đọc scaled loss thành USD.
+
+**Proposed cụ thể hóa còn cần review:** epoch report dùng index 1..50 nhất quán; MedianPruner n_startup_trials=5 đã Confirmed (khác sampler startup=3); interval_steps=1, n_min_trials=1 còn Proposed. Warmup của pruner không ngăn early stopping riêng. CNN channels search lớp đầu C, lớp sau C/2 đã được human duyệt và ghi walkthrough §2.3; không tự đổi mapping. Ghi giá trị lr trial là lr ban đầu, scheduler thay đổi lr trong epoch sau. Các lựa chọn này chưa được xem là Confirmed trước review bản DEFINE.
 
 Loss nonfinite phải dừng trial và ghi lỗi, không thay bằng điểm tốt giả. Lưu COMPLETE/PRUNED/FAIL, objective, duration, best epoch, actual epochs, sampler/pruner config và checkpoint. Test chỉ mở sau khóa study/model selection. Không tự refit DL trên train+val; **Proposed** dùng checkpoint train-only tốt nhất để đánh giá cuối, không thêm run cuối ngoài ngân sách mà chưa duyệt.
 
@@ -306,7 +308,7 @@ Các fixture/test harness chính thức sẽ thiết kế trong implementation p
 | Metric | Công thức | Đơn vị / diễn giải / sử dụng |
 |---|---|---|
 | MAE — Mean Absolute Error | mean(abs(e)) | USD, sai lệch tuyệt đối trung bình; càng nhỏ càng tốt |
-| MSE — Mean Squared Error | mean(e²) | USD² khi trên giá gốc; loss/objective nếu trên scaled; nhạy lỗi lớn; không metric báo cáo bắt buộc |
+| MSE — Mean Squared Error | mean(e²) | USD² trên giá gốc: lưu bắt buộc trong bảng/artifact chi tiết từng bước và gộp; loss/objective trên scaled phải gắn nhãn riêng; nhạy lỗi lớn, không ô chỉ số chính trên slide |
 | RMSE — Root Mean Squared Error | sqrt(mean(e²)) | USD, nhạy lỗi lớn; càng nhỏ càng tốt |
 | MAPE — Mean Absolute Percentage Error | 100 * mean(abs(e/y)) | %, sai số tương đối; nhạy actual gần 0 |
 | R² — Coefficient of Determination | R²_h = 1 - sum_i(e[i,h]²)/sum_i((y[i,h]-mean_i(y[i,h]))²) | Không đơn vị; có thể âm, không đọc là % accuracy; so trên cùng cohort |
@@ -318,7 +320,7 @@ Không đặt ngưỡng MAE/RMSE tùy ý hay tuyên bố LSTM thắng trước c
 
 ## 7.3. Baseline Evaluation
 
-Linear Regression và ARIMA đều bắt buộc. Cùng snapshot, target, scale nghĩa giá, split và forecast origins với DL. Baseline không cần GPU hoặc cùng thuật toán fit, nhưng phải công bố input history và preprocessing khác biệt. ARIMA chỉ cập nhật trạng thái từ actual đã quan sát, không refit tham số trên test. Hyperparameter/order không chọn theo test. Không dùng fitted values trên train thay genuine forecasts để báo test performance.
+Linear Regression và ARIMA đều bắt buộc; không thêm Naive vào baseline hiện hành. ARIMA A: order=(5,1,0), trend='n', fit toàn bộ train; append quan sát đã xuất hiện với refit=False; không hội tụ ghi FAIL và nguyên nhân, không tự đổi order hoặc báo metric như fit thành công. Cùng snapshot, target, scale nghĩa giá, split và forecast origins với DL. Baseline không cần GPU hoặc cùng thuật toán fit, nhưng phải công bố input history và preprocessing khác biệt. ARIMA chỉ cập nhật trạng thái từ actual đã quan sát, không refit tham số trên test. Hyperparameter/order không chọn theo test. Không dùng fitted values trên train thay genuine forecasts để báo test performance.
 
 ## 7.4. Model Comparison / Rolling-origin
 
@@ -350,7 +352,7 @@ Trước bàn giao code: gen -> smoke test -> run -> check with DESCRIPTION/DEFI
 | D01 | Phiên hoàn tất, lịch sàn, biên 5 năm, snapshot/end date thực tế | Duyệt collection policy rồi kiểm tra dữ liệu tải thật |
 | D02 | Cleaning/outlier/feature expansion | EDA train và human review |
 | D03 | Dependency pins, Kaggle runtime/GPU | Resolver/install/import/smoke evidence trước full training |
-| D04 | Pruner remaining settings/epoch index, objective scale, CNN search mapping | Review các Proposed ở 6.2 trước tuning |
+| D04 | Pruner remaining settings/epoch index (objective scaled, startup=5 và CNN mapping đã chốt) | Review các Proposed ở 6.2 trước tuning |
 | D05 | LR adapter và ARIMA fit history/trend/convergence policy | Duyệt baseline plan, chỉ fit/tune theo train/val |
 | D06 | Schema/filename chi tiết, split rounding, runtime timing | Review Proposed ở mục 4 và 7 trước code tương ứng |
 | D07 | Notebook inputs, operator skill và artifact-selection UX | Duyệt demo plan; không tự mở Web |
