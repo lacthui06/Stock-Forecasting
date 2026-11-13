@@ -1,1 +1,537 @@
-<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f4f7f3"><title>NVDA — Define & Design Problem</title><link rel="stylesheet" href="assets/presentation.css"></head><body><main id="stage" aria-label="NVDA Define và Design"><section class="slide slide-1 active" data-duration="25" aria-label="Slide 1"><div class="slide-top"><span class="eyebrow">DEFINE / 01 · PROJECT NAME & PROBLEM</span><span class="chapter">DEFINE <i></i> 01</span></div><h1>Dự báo giá cổ phiếu <em>NVDA.</em></h1><div class="content"><p class="deck-sub reveal">Multi-step Stock Forecasting với LSTM và 1D-CNN.</p><div class="cover-split"><div class="cover-text reveal"><span class="section-tag">PROBLEM → RESEARCH QUESTION</span><h2>Cần lập kế hoạch<br>cho <em>5 phiên tới.</em></h2><p>Sau phiên t, người dùng cần một kịch bản giá ngắn hạn để tham khảo và so sánh mô hình.</p><div class="cover-tags"><span>60 giá Close</span><span>5 giá dự báo</span></div></div><div class="forecast-board reveal"><div class="board-top"><b>NVDA / CỬA SỔ DỰ BÁO</b><span class="live-dot">MINH HỌA</span></div><div class="bar-chart"><div class="history-bars"><i style="--h:23%;--i:0"></i><i style="--h:36%;--i:1"></i><i style="--h:30%;--i:2"></i><i style="--h:47%;--i:3"></i><i style="--h:42%;--i:4"></i><i style="--h:61%;--i:5"></i><i style="--h:55%;--i:6"></i><i style="--h:75%;--i:7"></i><i style="--h:67%;--i:8"></i><i style="--h:90%;--i:9"></i><i style="--h:81%;--i:10"></i><i style="--h:100%;--i:11"></i></div><div class="cutoff"><span>t</span></div><div class="future-bars"><i style="--h:60%;--i:0"><b>t+1</b></i><i style="--h:71%;--i:1"><b>t+2</b></i><i style="--h:66%;--i:2"><b>t+3</b></i><i style="--h:86%;--i:3"><b>t+4</b></i><i style="--h:78%;--i:4"><b>t+5</b></i></div></div><div class="chart-labels"><span>60 phiên đã quan sát</span><span>5 phiên tiếp theo</span></div><p class="diagram-note">Sơ đồ cấu trúc · không phải dữ liệu giá thực tế</p></div></div><div class="mini-pipeline reveal"><span>01 / Thu thập</span><i>→</i><span>02 / Huấn luyện</span><i>→</i><span>03 / Dự báo</span><i>→</i><span>04 / Kiểm chứng</span></div></div><aside class="notes">Tên đề tài là dự đoán giá cổ phiếu đa bước với LSTM và CNN trên NVDA. Vấn đề là người dùng muốn tham khảo diễn biến cả tuần giao dịch thay vì một ngày. Mục tiêu cụ thể là dùng 60 giá đóng cửa quá khứ dự báo năm phiên tiếp theo, rồi kiểm chứng với Linear Regression và ARIMA. Đây là thiết kế đề xuất, chưa có kết quả thực nghiệm.</aside><footer class="slide-footer"><span>NVDA / COURSEWORK · THIẾT KẾ ĐỀ XUẤT</span><span>0:00–0:25 <b>01 / 10</b></span></footer></section><section class="slide slide-2" data-duration="35" aria-label="Slide 2"><div class="slide-top"><span class="eyebrow">DEFINE / 02 · USER · INPUT / OUTPUT · FEATURES</span><span class="chapter">DEFINE <i></i> 02</span></div><h1>Đúng người dùng.<br><em>Rõ đầu vào và đầu ra.</em></h1><div class="content"><div class="user-strip reveal"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="24" cy="15" r="8"/><path d="M8 43v-5a16 16 0 0 1 32 0v5"/></svg><div><b>TARGET USER</b><p>Nhà đầu tư cá nhân · Chuyên viên phân tích định lượng</p></div></div><div class="flow-row"><div class="flow-node  reveal" data-live><div class="node-head"><span class="mono">01 / INPUT</span><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="24" cy="10" rx="15" ry="6"/><path d="M9 10v25c0 8 30 8 30 0V10M9 22c0 8 30 8 30 0"/></svg></div><h3>60 giá Close</h3><p>NVDA · dữ liệu nến ngày</p><div class="node-track"><i></i></div></div><div class="connector" aria-hidden="true"><span>→</span><i></i></div><div class="flow-node featured reveal" data-live><div class="node-head"><span class="mono">02 / PROCESS</span><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="12" r="4"/><circle cx="10" cy="36" r="4"/><circle cx="36" cy="24" r="5"/><path d="m14 12 17 10M14 36l17-10"/></svg></div><h3>Hồi quy đa bước</h3><p>X (B,60,1) → Y (B,5)</p><div class="node-track"><i></i></div></div><div class="connector" aria-hidden="true"><span>→</span><i></i></div><div class="flow-node  reveal" data-live><div class="node-head"><span class="mono">03 / OUTPUT</span><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 6v35h36M14 32l9-11 7 5 12-16"/></svg></div><h3>5 giá Close</h3><p>Ngày giao dịch + USD</p><div class="node-track"><i></i></div></div></div><div class="feature-line reveal"><b>CORE FEATURES</b><span>Tải / cache</span><span>Dự báo</span><span>So sánh 4 model</span><span>Biểu đồ + metrics</span></div></div><aside class="notes">Người dùng là nhà đầu tư cá nhân và chuyên viên phân tích. Đầu vào ban đầu chỉ là giá Close theo ngày của NVDA, không dùng tin tức hay toàn bộ OHLCV. Sau 60 phiên đã quan sát, đầu ra là năm cặp ngày giao dịch và giá USD, không phải lệnh mua bán. Các chức năng chính gồm tải dữ liệu có cache, dự báo đa bước, so sánh bốn mô hình và xuất đồ thị cùng chỉ số. Tensor đầu vào là B, 60, 1 và đầu ra là B, 5.</aside><footer class="slide-footer"><span>NVDA / COURSEWORK · THIẾT KẾ ĐỀ XUẤT</span><span>0:25–1:00 <b>02 / 10</b></span></footer></section><section class="slide slide-3" data-duration="35" aria-label="Slide 3"><div class="slide-top"><span class="eyebrow">DEFINE / 03 · CONSTRAINTS & SUCCESS CRITERIA</span><span class="chapter">DEFINE <i></i> 03</span></div><h1>Thế nào là một<br><em>thử nghiệm thành công?</em></h1><div class="content"><div class="criteria-grid"><article class="criteria reveal"><div class="card-label">01 / TECH CONSTRAINTS</div><h3>Đúng giới hạn bài toán</h3><ul><li>Python / PyTorch · CPU hoặc GPU</li><li>Yahoo Finance · dự kiến 5 năm</li><li>Split thời gian <b>70 / 15 / 15</b></li><li>Scaler chỉ fit trên <b>Train</b></li></ul><div class="split-strip"><span>70% TRAIN</span><span>15%</span><span>15%</span></div></article><article class="criteria success reveal"><div class="card-label">02 / EVALUATION → SUCCESS</div><h3>Đo rồi mới kết luận</h3><p><b>MAE · RMSE · MAPE · R²</b><br>Directional Accuracy; từng horizon.<br>Cùng mốc dự báo trên Test.</p><div class="success-check"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 24 10 10L40 13"/></svg><span>Trả đúng 5 giá hợp lệ, tái lập được.</span></div><div class="success-check"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 24 10 10L40 13"/></svg><span>DL cải thiện nếu MAE và RMSE thấp hơn baseline tốt nhất theo từng chỉ số.</span></div></article></div></div><aside class="notes">Ràng buộc gồm Python PyTorch, phần cứng CPU hoặc GPU, dữ liệu dự kiến năm năm và chia theo thời gian 70, 15, 15. Scaler chỉ fit trên train. Tiêu chí chức năng là trả đúng năm giá hợp lệ và tái lập được từ bộ artifact. Đánh giá gồm các metric giá và hướng, riêng từng horizon lẫn tổng hợp. Muốn kết luận học sâu cải thiện, MAE và RMSE phải thấp hơn baseline tốt nhất theo từng chỉ số trên test độc lập. Nếu không đạt, vẫn báo cáo kết quả và bác bỏ giả thuyết cải thiện, không sửa tiêu chí theo test.</aside><footer class="slide-footer"><span>NVDA / COURSEWORK · THIẾT KẾ ĐỀ XUẤT</span><span>1:00–1:35 <b>03 / 10</b></span></footer></section><section class="slide slide-4" data-duration="35" aria-label="Slide 4"><div class="slide-top"><span class="eyebrow">DESIGN / 04 · SYSTEM & MODEL ARCHITECTURE</span><span class="chapter">DESIGN <i></i> 04</span></div><h1>Một hệ thống.<br><em>Bốn mô hình đối chứng.</em></h1><div class="content"><div class="architecture"><div class="arch-end reveal"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="24" cy="10" rx="15" ry="6"/><path d="M9 10v25c0 8 30 8 30 0V10M9 22c0 8 30 8 30 0"/></svg><h3>DATA</h3><p>Cache<br>Validate<br>Scale / Window</p><span class="shape">(B,60,1)</span></div><div class="arch-link"><div class="connector" aria-hidden="true"><span>→</span><i></i></div></div><div class="model-matrix"><div class="model-box reveal" data-live><span>BASELINE 01</span><h3>Linear Regression</h3><p>60 giá → hồi quy → 5 giá</p></div><div class="model-box reveal" data-live><span>BASELINE 02</span><h3>ARIMA</h3><p>Thống kê → dự báo 5 bước</p></div><div class="model-box core reveal" data-live><span>DEEP LEARNING 01</span><h3>LSTM</h3><p>2 tầng · hidden 64 → Linear</p></div><div class="model-box core reveal" data-live><span>DEEP LEARNING 02</span><h3>1D-CNN</h3><p>Conv1D → Pool → Linear</p></div></div><div class="arch-link"><div class="connector" aria-hidden="true"><span>→</span><i></i></div></div><div class="arch-end output reveal"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 6v35h36M14 32l9-11 7 5 12-16"/></svg><h3>OUTPUT</h3><p>Inverse scale<br>Giá USD<br>Metrics / plots</p><span class="shape">(B,5)</span></div></div><div class="ribbon reveal"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 24 10 10L40 13"/></svg><span>Cùng forecast origins và Test. CNN đổi trục input thành (B,1,60).</span></div></div><aside class="notes">Kiến trúc tách dữ liệu, mô hình và đầu ra đánh giá. LSTM nhận tensor B, 60, 1, đi qua hai tầng LSTM với hidden 64 rồi chiếu về năm bước. CNN cần đổi trục thành B, 1, 60 để convolve trên thời gian, sau đó pooling và linear cũng trả năm bước. Hai baseline là Linear Regression và ARIMA. Mọi mô hình phải dự báo tại cùng forecast origins trên test. Đây là thiết kế, các module chưa được triển khai trong repository.</aside><footer class="slide-footer"><span>NVDA / COURSEWORK · THIẾT KẾ ĐỀ XUẤT</span><span>1:35–2:10 <b>04 / 10</b></span></footer></section><section class="slide slide-5" data-duration="25" aria-label="Slide 5"><div class="slide-top"><span class="eyebrow">DESIGN / 05 · MODULES & FOLDER STRUCTURE</span><span class="chapter">DESIGN <i></i> 05</span></div><h1>Chia module theo<br><em>đúng trách nhiệm.</em></h1><div class="content"><div class="module-layout"><div class="folder-tree reveal"><div class="tree-root"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 14h38v25H5zM5 14V8h15l5 6"/></svg><b>Stock-Forecasting/</b></div><div class="tree-line"><span>├─</span><b>config/</b><small>Tham số tập trung</small></div><div class="tree-line"><span>├─</span><b>src/</b><small>Logic tái sử dụng</small></div><div class="tree-child">data/ · models/ · utils/</div><div class="tree-line"><span>├─</span><b>scripts/</b><small>Điều phối CLI</small></div><div class="tree-line"><span>├─</span><b>tests/</b><small>Kiểm thử</small></div><div class="tree-line"><span>└─</span><b>outputs/ · report/</b></div></div><div class="module-notes"><div class="module-item reveal" data-live><b>DATA</b><p>data_loader: tải/cache<br>dataset: split, scale, window</p></div><div class="module-item reveal" data-live><b>MODELS</b><p>LR · ARIMA · LSTM · CNN<br>Mỗi model một module.</p></div><div class="module-item reveal" data-live><b>UTILS + SCRIPTS</b><p>metrics, visualizer; train/eval/predict.<br>Tests: shape, cutoff và dữ liệu lỗi.</p></div></div></div><p class="bottom-note reveal">Cấu trúc đề xuất; repo hiện có khung và config. Báo cáo chính: walkthrough.md.</p></div><aside class="notes">Tổ chức module theo trách nhiệm. Config quản lý tham số. Data chịu trách nhiệm tải cache, chia tập, scaler và window. Models tách bốn kiến trúc. Utils chứa metrics và đồ thị. Scripts điều phối train eval predict, tests kiểm tra shape và leakage. Outputs lưu artifact theo run, report chứa trình bày, còn walkthrough là báo cáo thực nghiệm chính. Tên file ở đây là cấu trúc dự kiến, không phải module đã có.</aside><footer class="slide-footer"><span>NVDA / COURSEWORK · THIẾT KẾ ĐỀ XUẤT</span><span>2:10–2:35 <b>05 / 10</b></span></footer></section><section class="slide slide-6" data-duration="35" aria-label="Slide 6"><div class="slide-top"><span class="eyebrow">DESIGN / 06 · DATA FLOW / TRAINING</span><span class="chapter">DESIGN <i></i> 06</span></div><h1>Training: <em>học từ quá khứ.</em></h1><div class="content"><div class="training-layout"><div class="phase-timeline"><div class="phase reveal" data-live><b class="phase-num">01</b><div><span>PREPARE</span><h3>Yahoo Finance → CSV cache → Validate</h3></div></div><div class="phase reveal" data-live><b class="phase-num">02</b><div><span>PREPROCESS</span><h3>Split → Fit scaler Train → Window 60/5</h3></div></div><div class="phase reveal" data-live><b class="phase-num">03</b><div><span>TRAIN & SELECT</span><h3>Train → chọn checkpoint bằng Validation</h3></div></div><div class="phase reveal" data-live><b class="phase-num">04</b><div><span>EVALUATE</span><h3>Chốt model → Test → inverse scale → metrics</h3></div></div></div><div class="artifact reveal"><div class="artifact-icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 14h38v25H5zM5 14V8h15l5 6"/></svg></div><span class="section-tag">SAVE / RUN_ID</span><h3>Một bộ artifact.<br>Đủ để chạy lại.</h3><ul><li>Checkpoint</li><li>Scaler + config</li><li>Cutoff + metrics</li></ul><div class="artifact-scan"></div></div></div><div class="ribbon reveal"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 24 10 10L40 13"/></svg><span>Không để 5 nhãn vượt ranh giới tập. Test độc lập, không dùng để chọn model.</span></div></div><aside class="notes">Training bắt đầu bằng tải dữ liệu, cache và kiểm tra chất lượng. Chia theo thời gian trước khi fit scaler và sinh cửa sổ. Mỗi nhãn năm ngày phải nằm trọn trong một tập. Có thể lấy lịch sử đầu vào từ tập trước nếu nó đã quan sát được tại mốc dự báo. Huấn luyện trên train và chọn siêu tham số bằng validation, dùng early stopping. Chỉ sau khi chốt mô hình mới đánh giá test, đổi về USD để tính metric. Lưu checkpoint cùng scaler, config, cutoff và metric để inference có thể dùng đúng bộ tương ứng.</aside><footer class="slide-footer"><span>NVDA / COURSEWORK · THIẾT KẾ ĐỀ XUẤT</span><span>2:35–3:10 <b>06 / 10</b></span></footer></section><section class="slide slide-7" data-duration="35" aria-label="Slide 7"><div class="slide-top"><span class="eyebrow">DESIGN / 07 · INFERENCE & API</span><span class="chapter">DESIGN <i></i> 07</span></div><h1>Inference: <em>không học lại.</em></h1><div class="content"><div class="flow-row compact"><div class="flow-node  reveal" data-live><div class="node-head"><span class="mono">01 / CHECK</span><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="24" cy="10" rx="15" ry="6"/><path d="M9 10v25c0 8 30 8 30 0V10M9 22c0 8 30 8 30 0"/></svg></div><h3>60 phiên ≤ t</h3><p>Đủ dữ liệu và đúng cutoff</p><div class="node-track"><i></i></div></div><div class="connector" aria-hidden="true"><span>→</span><i></i></div><div class="flow-node featured reveal" data-live><div class="node-head"><span class="mono">02 / PREDICT</span><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="12" r="4"/><circle cx="10" cy="36" r="4"/><circle cx="36" cy="24" r="5"/><path d="m14 12 17 10M14 36l17-10"/></svg></div><h3>Scale → Model</h3><p>eval + no_grad; không refit</p><div class="node-track"><i></i></div></div><div class="connector" aria-hidden="true"><span>→</span><i></i></div><div class="flow-node  reveal" data-live><div class="node-head"><span class="mono">03 / RETURN</span><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 6v35h36M14 32l9-11 7 5 12-16"/></svg></div><h3>5 phiên > t</h3><p>Inverse scale → USD</p><div class="node-track"><i></i></div></div></div><div class="api-layout"><div class="api-contract reveal"><span class="section-tag">PYTHON API NỘI BỘ / ĐỀ XUẤT</span><code>predict(close_history, model_bundle)</code><p>Lỗi rõ ràng: thiếu lịch sử, input lỗi,<br>checkpoint / scaler không khớp.</p></div><div class="response reveal"><div class="response-head"><span class="response-dot"></span>RESPONSE CONTRACT</div><code>{ as_of, model_version,<br>&nbsp; forecasts: [<br>&nbsp;&nbsp; { date, close_usd } × 5<br>&nbsp; ] }</code></div></div><p class="bottom-note reveal">Đầu ra để tham khảo, không tự động giao dịch. API là thiết kế dự kiến.</p></div><aside class="notes">Inference khác training: không học lại từ dữ liệu mới. Nhận 60 phiên ở hoặc trước cutoff, kiểm tra input, tải đúng checkpoint scaler rồi chạy eval và no_grad. Sau dự báo phải inverse transform và gán đúng năm phiên theo lịch sàn, không cộng năm ngày lịch. API nội bộ đề xuất là predict nhận lịch sử Close và model bundle, trả ngày cutoff, phiên bản mô hình và năm cặp ngày giá USD. Nếu thiếu dữ liệu, dữ liệu sai hay artifact không khớp, trả lỗi rõ ràng. Hiện chưa triển khai HTTP service; Yahoo Finance là nguồn dữ liệu bên ngoài.</aside><footer class="slide-footer"><span>NVDA / COURSEWORK · THIẾT KẾ ĐỀ XUẤT</span><span>3:10–3:45 <b>07 / 10</b></span></footer></section><section class="slide slide-8" data-duration="25" aria-label="Slide 8"><div class="slide-top"><span class="eyebrow">DESIGN / 08 · LOGIC & EDGE CASES</span><span class="chapter">DESIGN <i></i> 08</span></div><h1>Dữ liệu lỗi?<br><em>Dừng đúng chỗ.</em></h1><div class="content"><div class="validation-header reveal"><span>INPUT</span><div class="gate-line"><i></i></div><b>VALIDATION GATE</b><div class="gate-line"><i></i></div><span class="pass">PREDICT</span></div><div class="edge-grid"><article class="edge reveal" data-live><span class="edge-index">01</span><h3>Dưới 60 phiên</h3><p>Từ chối; báo số phiên còn thiếu.</p></article><article class="edge reveal" data-live><span class="edge-index">02</span><h3>NaN / Inf / giá ≤ 0</h3><p>Kiểm tra nguồn; không tự tạo giá.</p></article><article class="edge reveal" data-live><span class="edge-index">03</span><h3>Ngày trùng / sai thứ tự</h3><p>Sắp xếp; xử lý bản ghi xung đột.</p></article><article class="edge reveal" data-live><span class="edge-index">04</span><h3>Ngày nghỉ / split / cache cũ</h3><p>Lịch sàn; thống nhất giá; kiểm tra timestamp.</p></article></div><div class="ribbon reveal"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 24 10 10L40 13"/></svg><span>Kiểm tra output: đúng 5 ngày tăng dần; đúng 5 giá hữu hạn và dương.</span></div></div><aside class="notes">Các edge case được xử lý tường minh. Dưới 60 phiên thì từ chối. NaN, vô cực hoặc giá không dương phải kiểm tra nguồn, không tự điền bừa. Ngày được sắp xếp, nhưng bản ghi trùng xung đột cần xử lý trước khi chạy. Ngày nghỉ theo lịch sàn. Với chia tách cổ phiếu, phải nhất quán cách điều chỉnh giá. Cache có timestamp và checkpoint phải khớp scaler. Kiểm tra đầu ra đúng năm ngày, đúng thứ tự và giá hợp lệ.</aside><footer class="slide-footer"><span>NVDA / COURSEWORK · THIẾT KẾ ĐỀ XUẤT</span><span>3:45–4:10 <b>08 / 10</b></span></footer></section><section class="slide slide-9" data-duration="25" aria-label="Slide 9"><div class="slide-top"><span class="eyebrow">DESIGN / 09 · SECURITY · PERFORMANCE · READABILITY</span><span class="chapter">DESIGN <i></i> 09</span></div><h1>Chất lượng nằm ở<br><em>cách hệ thống vận hành.</em></h1><div class="content"><div class="quality-grid"><article class="mini reveal teal"><div class="icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M24 5 40 12v12c0 10-16 19-16 19S8 34 8 24V12Z"/><path d="m16 24 6 6 11-13"/></svg></div><h3>SECURITY</h3><p>Whitelist ticker; giới hạn input.<br>Chỉ nạp checkpoint tin cậy.<br>Giới hạn đường dẫn artifact.<br>HTTP mở rộng: auth/rate limit.</p></article><article class="mini reveal orange"><div class="icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="24" cy="24" r="18"/><path d="M24 12v13l9 6"/></svg></div><h3>PERFORMANCE</h3><p>Cache; load model một lần.<br>Batch, eval và no_grad.<br>Đo latency p50/p95, train time.<br>Công bố phần cứng đo.</p></article><article class="mini reveal purple"><div class="icon"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m17 12-12 12 12 12M31 12l12 12-12 12M28 6l-8 36"/></svg></div><h3>READABILITY</h3><p>Một module, một trách nhiệm.<br>Config tập trung; type/shape rõ.<br>Lỗi có thông điệp dễ hiểu.<br>Test input lỗi và ranh giới.</p></article></div><div class="ribbon reveal"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 24 10 10L40 13"/></svg><span>Chưa benchmark: không tuyên bố tốc độ hoặc độ chính xác đã đạt.</span></div></div><aside class="notes">Thiết kế bảo mật giới hạn ticker, kích thước input và đường dẫn artifact, chỉ nạp checkpoint tin cậy, không nhận pickle tùy ý. Nếu có HTTP service thì cần xác thực và rate limit. Hiệu năng dùng cache, tải model một lần và batch inference; đo p50 p95 cùng thời gian train trên phần cứng công bố. Về readability, module có trách nhiệm riêng, cấu hình tập trung, shape rõ và thông báo lỗi có ý nghĩa. Chưa benchmark nên không tuyên bố nhanh hơn.</aside><footer class="slide-footer"><span>NVDA / COURSEWORK · THIẾT KẾ ĐỀ XUẤT</span><span>4:10–4:35 <b>09 / 10</b></span></footer></section><section class="slide slide-10" data-duration="25" aria-label="Slide 10"><div class="slide-top"><span class="eyebrow">DESIGN / 10 · MILESTONES & TECH RISKS</span><span class="chapter">DESIGN <i></i> 10</span></div><h1>Ba tuần để đi từ<br><em>thiết kế đến kiểm chứng.</em></h1><div class="content"><div class="milestone-road"><div class="milestone reveal" data-live><div class="mile-no">01</div><span>TUẦN 1</span><h3>Dữ liệu & baseline</h3><p>Split / scaler đúng.<br>LR và ARIMA chạy được.</p></div><div class="milestone reveal" data-live><div class="mile-no">02</div><span>TUẦN 2</span><h3>LSTM & CNN</h3><p>Train và tinh chỉnh.<br>Chọn bằng Validation.</p></div><div class="milestone reveal" data-live><div class="mile-no">03</div><span>TUẦN 3</span><h3>Đánh giá & demo</h3><p>Test, phân tích lỗi.<br>Artifact tái lập.</p></div></div><div class="risk-strip reveal"><b>TECH RISKS</b><div><strong>API lỗi / rate limit</strong><span>Cache có timestamp; retry giới hạn.</span></div><div><strong>Leakage / overfit</strong><span>Test cutoff; early stopping.</span></div><div><strong>Regime shift</strong><span>Phân tích lỗi theo giai đoạn.</span></div></div><div class="ribbon reveal"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 24 10 10L40 13"/></svg><span>Demo: chọn model → nhập dữ liệu → xem 5 giá và biểu đồ → đối chiếu baseline.</span></div></div><aside class="notes">Tuần một hoàn thành dữ liệu, chia tập và baseline. Tuần hai hoàn thành LSTM CNN và chọn checkpoint bằng validation. Tuần ba test, phân tích lỗi và đóng gói demo. Rủi ro API được giảm bằng cache có timestamp và retry giới hạn, không lặng lẽ dùng cache quá cũ. Leakage được kiểm tra bằng cutoff window, overfit bằng early stopping. Thị trường đổi chế độ phải thể hiện qua phân tích lỗi theo giai đoạn. Sản phẩm cuối là pipeline tái lập, dự báo năm phiên và so sánh có bằng chứng.</aside><footer class="slide-footer"><span>NVDA / COURSEWORK · THIẾT KẾ ĐỀ XUẤT</span><span>4:35–5:00 <b>10 / 10</b></span></footer></section></main><aside id="notes-panel" hidden aria-label="Lời nói gợi ý"></aside><div id="progress"></div><nav id="toolbar" aria-label="Điều khiển trình bày"><span id="count" aria-live="polite"></span><div class="navigation"><button id="prev" aria-label="Slide trước">←</button><div id="dots" aria-label="Chọn slide"></div><button id="next" aria-label="Slide tiếp">→</button></div><div class="tools"><button id="replay" title="Chạy lại animation (R)">↻ Hiệu ứng</button><button id="motion" aria-pressed="true" title="Bật/tắt chuyển động (M)">Motion: ON</button><button id="notes" aria-pressed="false">Lời nói (N)</button><button id="reading" aria-pressed="false">Đọc</button><button id="fullscreen" title="Toàn màn hình (F)">⛶</button><button id="timer">Bắt đầu</button><span id="clock" role="timer">05:00</span><button id="reset" aria-label="Đặt lại đồng hồ">↺</button></div></nav><script src="assets/presentation.js"></script></body></html>
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f7f3">
+  <title>NVDA — Define & Design Specification</title>
+  <link rel="stylesheet" href="assets/presentation.css">
+</head>
+<body>
+<main id="stage" aria-label="NVDA Define và Design">
+
+  <!-- SLIDE 1 -->
+  <section class="slide slide-1 active" data-duration="25" aria-label="Slide 1">
+    <div class="slide-top">
+      <span class="eyebrow">DEFINE / 01 · TÊN ĐỀ TÀI & VẤN ĐỀ</span>
+      <span class="chapter">DEFINE <i></i> 01</span>
+    </div>
+    <h1>Dự báo giá cổ phiếu <em>NVDA.</em></h1>
+    <div class="content">
+      <p class="deck-sub reveal">Multi-Step Stock Price Forecasting với Học sâu (LSTM & 1D-CNN).</p>
+      <div class="cover-split">
+        <div class="cover-text reveal">
+          <div>
+            <span class="section-tag">PROBLEM & MOTIVATION</span>
+            <h2>Dự báo dải giá<br>cho <em>5 phiên tới.</em></h2>
+            <p>Cổ phiếu NVDA biến động phi tuyến cực mạnh theo làn sóng AI. Dự đoán 1 ngày (t+1) là quá ngắn; các mô hình tuyến tính truyền thống đuối sức. Nhà đầu tư cần dải giá 5 ngày để lập kế hoạch tuần.</p>
+          </div>
+          <div class="cover-tags">
+            <span>60 phiên quan sát (Input)</span>
+            <span>5 phiên dự báo USD (Output)</span>
+          </div>
+        </div>
+        <div class="forecast-board reveal">
+          <div class="board-top">
+            <b>NVDA / CỬA SỔ DỰ BÁO ĐA BƯỚC</b>
+            <span class="live-dot">MINH HỌA</span>
+          </div>
+          <div class="bar-chart">
+            <div class="history-bars">
+              <i style="--h:25%;--i:0"></i><i style="--h:38%;--i:1"></i><i style="--h:32%;--i:2"></i>
+              <i style="--h:48%;--i:3"></i><i style="--h:44%;--i:4"></i><i style="--h:62%;--i:5"></i>
+              <i style="--h:56%;--i:6"></i><i style="--h:76%;--i:7"></i><i style="--h:68%;--i:8"></i>
+              <i style="--h:92%;--i:9"></i><i style="--h:82%;--i:10"></i><i style="--h:100%;--i:11"></i>
+            </div>
+            <div class="cutoff"><span>t</span></div>
+            <div class="future-bars">
+              <i style="--h:62%;--i:0"><b>t+1</b></i>
+              <i style="--h:74%;--i:1"><b>t+2</b></i>
+              <i style="--h:68%;--i:2"><b>t+3</b></i>
+              <i style="--h:88%;--i:3"><b>t+4</b></i>
+              <i style="--h:80%;--i:4"><b>t+5</b></i>
+            </div>
+          </div>
+          <div class="chart-labels">
+            <span>60 phiên lịch sử (Lookback)</span>
+            <span>5 phiên tiếp theo (Horizon)</span>
+          </div>
+          <p class="diagram-note">Sơ đồ trượt cửa sổ thời gian · không phải dữ liệu giá thật</p>
+        </div>
+      </div>
+      <div class="mini-pipeline reveal">
+        <span>01 / Kéo dữ liệu</span><i>→</i>
+        <span>02 / Chống rò rỉ</span><i>→</i>
+        <span>03 / 4 Mô hình</span><i>→</i>
+        <span>04 / Chấm điểm USD</span>
+      </div>
+    </div>
+    <aside class="notes">Kính chào thầy cô và hội đồng. Tên đề tài là dự đoán giá cổ phiếu đa bước trên mã NVIDIA (NVDA). Vấn đề là cổ phiếu NVDA biến động rất mạnh theo làn sóng AI; dự đoán một ngày không đủ để lập kế hoạch tuần, còn các công thức đường thẳng truyền thống thì không bắt được tính phi tuyến. Mục tiêu là dùng 60 ngày quá khứ dự báo đồng thời 5 ngày tiếp theo.</aside>
+    <footer class="slide-footer">
+      <span>NVDA / ĐẶC TẢ ĐỀ TÀI · DEFINE & DESIGN</span>
+      <span>0:00–0:25 <b>01 / 10</b></span>
+    </footer>
+  </section>
+
+  <!-- SLIDE 2 -->
+  <section class="slide slide-2" data-duration="35" aria-label="Slide 2">
+    <div class="slide-top">
+      <span class="eyebrow">DEFINE / 02 · NGƯỜI DÙNG & HỢP ĐỒNG VÀO / RA</span>
+      <span class="chapter">DEFINE <i></i> 02</span>
+    </div>
+    <h1>Đúng người dùng.<br><em>Rõ đầu vào và đầu ra.</em></h1>
+    <div class="content">
+      <div class="user-strip reveal">
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="24" cy="15" r="8"/><path d="M8 43v-5a16 16 0 0 1 32 0v5"/></svg>
+        <div>
+          <b>TARGET USER</b>
+          <p>Nhà đầu tư cá nhân (lướt sóng ngắn hạn) · Chuyên viên phân tích định lượng (Quant Analyst)</p>
+        </div>
+      </div>
+      <div class="flow-row">
+        <div class="flow-node reveal" data-live>
+          <div>
+            <div class="node-head"><span class="mono">01 / INPUT</span><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="24" cy="10" rx="15" ry="6"/><path d="M9 10v25c0 8 30 8 30 0V10M9 22c0 8 30 8 30 0"/></svg></div>
+            <h3>60 giá Close</h3>
+            <p>NVDA · Chuỗi giá đóng cửa 3 tháng giao dịch gần nhất</p>
+          </div>
+          <div class="node-track"><i></i></div>
+        </div>
+        <div class="connector" aria-hidden="true"><span>→</span><i></i></div>
+        <div class="flow-node featured reveal" data-live>
+          <div>
+            <div class="node-head"><span class="mono">02 / PROCESS</span><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="12" r="4"/><circle cx="10" cy="36" r="4"/><circle cx="36" cy="24" r="5"/><path d="m14 12 17 10M14 36l17-10"/></svg></div>
+            <h3>Hồi quy đa bước</h3>
+            <p>Tensor X (B, 60, 1) → Mô hình DL → Tensor Y (B, 5)</p>
+          </div>
+          <div class="node-track"><i></i></div>
+        </div>
+        <div class="connector" aria-hidden="true"><span>→</span><i></i></div>
+        <div class="flow-node reveal" data-live>
+          <div>
+            <div class="node-head"><span class="mono">03 / OUTPUT</span><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 6v35h36M14 32l9-11 7 5 12-16"/></svg></div>
+            <h3>5 giá Close USD</h3>
+            <p>Dải giá 5 ngày tiếp theo bằng USD + Biểu đồ xu hướng trực quan</p>
+          </div>
+          <div class="node-track"><i></i></div>
+        </div>
+      </div>
+      <div class="feature-line reveal">
+        <b>KỲ VỌNG ĐẦU RA:</b>
+        <span>5 giá tương lai (USD)</span>
+        <span>Biểu đồ trực quan</span>
+        <span>Độ lệch dự kiến (MAE)</span>
+        <span>Xu hướng Tăng/Giảm (DA)</span>
+      </div>
+    </div>
+    <aside class="notes">Người dùng là nhà đầu tư cá nhân và chuyên viên định lượng. Đầu vào là 60 ngày giá đóng cửa liên tiếp của NVDA, tương đương 3 tháng giao dịch. Đầu ra là một vector gồm đúng 5 giá đóng cửa cho 5 phiên làm việc tiếp theo bằng tiền USD, kèm biểu đồ trực quan để người dùng nhìn thấy ngay xu hướng thay vì chỉ đọc các con số rời rạc.</aside>
+    <footer class="slide-footer">
+      <span>NVDA / ĐẶC TẢ ĐỀ TÀI · DEFINE & DESIGN</span>
+      <span>0:25–1:00 <b>02 / 10</b></span>
+    </footer>
+  </section>
+
+  <!-- SLIDE 3 -->
+  <section class="slide slide-3" data-duration="35" aria-label="Slide 3">
+    <div class="slide-top">
+      <span class="eyebrow">DEFINE / 03 · TÍNH NĂNG CƠ BẢN & MỞ RỘNG</span>
+      <span class="chapter">DEFINE <i></i> 03</span>
+    </div>
+    <h1>Phân tầng tính năng.<br><em>Cơ bản & Mở rộng chuyên sâu.</em></h1>
+    <div class="content">
+      <div class="edge-grid">
+        <article class="edge reveal" data-live>
+          <span class="edge-index">01</span>
+          <h3>Dữ liệu & Chống Leakage</h3>
+          <p>Tải cache offline, kiểm định dừng ADF trên Train, chia tập 70/15/15 và fit Scaler train-only. <i>(Cơ bản)</i></p>
+        </article>
+        <article class="edge reveal" data-live>
+          <span class="edge-index">02</span>
+          <h3>LSTM 1-Step & Baselines</h3>
+          <p>Dự báo phiên kế tiếp (t+1), đối chứng sòng phẳng với Linear Regression và ARIMA(5,1,0). <i>(Cơ bản)</i></p>
+        </article>
+        <article class="edge reveal" data-live>
+          <span class="edge-index">03</span>
+          <h3>Optuna Tuning Kaggle GPU</h3>
+          <p>Tự động hóa tìm kiếm siêu tham số bằng TPESampler và cơ chế tỉa sớm MedianPruner. <i>(Cơ bản)</i></p>
+        </article>
+        <article class="edge reveal" data-live>
+          <span class="edge-index">04</span>
+          <h3>Đa bước 5 ngày & 1D-CNN</h3>
+          <p>Thực nghiệm so sánh Recursive vs Direct Multi-Output và mở rộng kiến trúc tích chập 1D-CNN. <i>(Mở rộng)</i></p>
+        </article>
+      </div>
+      <div class="ribbon reveal">
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 24 10 10L40 13"/></svg>
+        <span><b>Đánh giá chuẩn:</b> Bảng chấm điểm USD minh bạch (MAE, RMSE, MAPE, R², DA) cùng Notebook demo tương tác trực quan.</span>
+      </div>
+    </div>
+    <aside class="notes">Tính năng được phân định rõ hai tầng: Tầng cơ bản hoàn thành trọn vẹn pipeline chống rò rỉ, mô hình LSTM một bước cùng hai baseline, đặc biệt tích hợp sẵn Optuna tuning trên Kaggle GPU với cơ chế tỉa sớm. Tầng mở rộng chuyên sâu nâng cấp lên bài toán đa bước 5 ngày so sánh giữa Recursive và Direct, đồng thời bổ sung kiến trúc 1D-CNN để lấy điểm nghiên cứu tối đa.</aside>
+    <footer class="slide-footer">
+      <span>NVDA / ĐẶC TẢ ĐỀ TÀI · DEFINE & DESIGN</span>
+      <span>1:00–1:35 <b>03 / 10</b></span>
+    </footer>
+  </section>
+
+  <!-- SLIDE 4 -->
+  <section class="slide slide-4" data-duration="35" aria-label="Slide 4">
+    <div class="slide-top">
+      <span class="eyebrow">DEFINE / 04 · RÀNG BUỘC & TIÊU CHUẨN THÀNH CÔNG</span>
+      <span class="chapter">DEFINE <i></i> 04</span>
+    </div>
+    <h1>Kỷ luật kỹ thuật &<br><em>Tiêu chuẩn nghiệm thu.</em></h1>
+    <div class="content">
+      <div class="criteria-grid">
+        <article class="criteria reveal">
+          <div>
+            <div class="card-label">01 / TECH CONSTRAINTS (KỶ LUẬT SẮT)</div>
+            <h3>Chống rò rỉ dữ liệu (No Leakage)</h3>
+            <ul>
+              <li>Phân chia thời gian <b>70% Train · 15% Val · 15% Test</b></li>
+              <li>Tuyệt đối <b>không xáo trộn (no shuffle)</b> dữ liệu</li>
+              <li>Scaler chỉ được học (<code>fit</code>) duy nhất trên tập <b>Train</b></li>
+              <li>Tôn trọng lịch sàn NASDAQ (không tạo dữ liệu giá ma)</li>
+            </ul>
+          </div>
+          <div class="split-strip">
+            <span>70% TRAIN (HỌC)</span>
+            <span>15% VAL (TINH CHỈNH)</span>
+            <span>15% TEST (NGHIỆM THU)</span>
+          </div>
+        </article>
+        <article class="criteria success reveal">
+          <div>
+            <div class="card-label">02 / SUCCESS CRITERIA (NGHIỆM THU)</div>
+            <h3>Bằng chứng số liệu thực</h3>
+            <p><b>Mục tiêu định lượng trên tập Test độc lập:</b><br>&bull; MAPE: <b>&le; 3 – 5%</b> sai lệch giá<br>&bull; R² Score: <b>&gt; 0.85</b> mức độ khớp xu hướng<br>&bull; Directional Acc: <b>&gt; 55%</b> đoán đúng chiều tăng/giảm</p>
+            <div class="success-check">
+              <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 24 10 10L40 13"/></svg>
+              <span>LSTM & 1D-CNN phải có MAE/RMSE thấp hơn rõ rệt so với Baseline.</span>
+            </div>
+            <div class="success-check">
+              <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 24 10 10L40 13"/></svg>
+              <span>100% số liệu nghiệm thu trích xuất từ file log code thật trong outputs/runs/.</span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+    <aside class="notes">Ràng buộc kỹ thuật quan trọng nhất là chống rò rỉ dữ liệu: chia tập 70-15-15 theo thời gian không shuffle, Scaler chỉ fit trên Train. Về tiêu chí thành công, mô hình phải đạt MAPE dưới 5 phần trăm, R2 trên 0.85 và đoán đúng hướng trên 55 phần trăm. Đặc biệt, Deep Learning phải thắng Baseline trên tập Test và toàn bộ số liệu phải lấy từ file log thực tế, cấm điền số ảo.</aside>
+    <footer class="slide-footer">
+      <span>NVDA / ĐẶC TẢ ĐỀ TÀI · DEFINE & DESIGN</span>
+      <span>1:35–2:10 <b>04 / 10</b></span>
+    </footer>
+  </section>
+
+  <!-- SLIDE 5 -->
+  <section class="slide slide-5" data-duration="35" aria-label="Slide 5">
+    <div class="slide-top">
+      <span class="eyebrow">DESIGN / 05 · KIẾN TRÚC MÔ HÌNH ĐỐI CHỨNG</span>
+      <span class="chapter">DESIGN <i></i> 05</span>
+    </div>
+    <h1>Một đấu trường.<br><em>Bốn mô hình đối chứng.</em></h1>
+    <div class="content">
+      <div class="architecture">
+        <div class="arch-end reveal">
+          <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="24" cy="10" rx="15" ry="6"/><path d="M9 10v25c0 8 30 8 30 0V10M9 22c0 8 30 8 30 0"/></svg>
+          <h3>INPUT</h3>
+          <p>60 ngày giá Close<br>Scaler transform<br>Window tensor</p>
+          <span class="shape">(B, 60, 1)</span>
+        </div>
+        <div class="arch-link">
+          <div class="connector" aria-hidden="true"><span>→</span><i></i></div>
+        </div>
+        <div class="model-matrix">
+          <div class="model-box reveal" data-live>
+            <span>BASELINE 01</span>
+            <h3>Linear Regression</h3>
+            <p>Kẻ đường thẳng hồi quy · mốc tối thiểu</p>
+          </div>
+          <div class="model-box reveal" data-live>
+            <span>BASELINE 02</span>
+            <h3>ARIMA(p, d, q)</h3>
+            <p>Tự hồi quy sai phân · chuẩn học thuật cổ điển</p>
+          </div>
+          <div class="model-box core reveal" data-live>
+            <span>CORE DEEP LEARNING 01</span>
+            <h3>Vanilla LSTM</h3>
+            <p>2 tầng (hidden 64) · cổng nhớ dài hạn</p>
+          </div>
+          <div class="model-box core reveal" data-live>
+            <span>CORE DEEP LEARNING 02</span>
+            <h3>1D-CNN</h3>
+            <p>Tích chập 1 chiều · bắt mẫu hình nến nhanh</p>
+          </div>
+        </div>
+        <div class="arch-link">
+          <div class="connector" aria-hidden="true"><span>→</span><i></i></div>
+        </div>
+        <div class="arch-end output reveal">
+          <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 6v35h36M14 32l9-11 7 5 12-16"/></svg>
+          <h3>OUTPUT</h3>
+          <p>Inverse scale<br>5 ngày giá USD<br>Bảng metrics</p>
+          <span class="shape">(B, 5)</span>
+        </div>
+      </div>
+      <div class="ribbon reveal">
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 24 10 10L40 13"/></svg>
+        <span>Tất cả 4 mô hình đều thi đấu trên cùng tập Test độc lập và cùng mốc thời gian xuất phát.</span>
+      </div>
+    </div>
+    <aside class="notes">Kiến trúc thiết kế đấu trường 4 mô hình: hai mô hình thống kê là Linear Regression làm mức sàn và ARIMA làm chuẩn cổ điển; hai mô hình học sâu là LSTM với cổng nhớ bắt phụ thuộc tuần tự, và 1D-CNN dùng bộ lọc tích chập trích xuất mẫu hình nến cục bộ với tốc độ cao. Cả 4 mô hình đều nhận đầu vào 60 ngày và xuất ra 5 ngày trên cùng một tập Test.</aside>
+    <footer class="slide-footer">
+      <span>NVDA / THIẾT KẾ KỸ THUẬT · DEFINE & DESIGN</span>
+      <span>2:10–2:45 <b>05 / 10</b></span>
+    </footer>
+  </section>
+
+  <!-- SLIDE 6 -->
+  <section class="slide slide-6" data-duration="25" aria-label="Slide 6">
+    <div class="slide-top">
+      <span class="eyebrow">DESIGN / 06 · KIẾN TRÚC 6 LỚP THEO CLEAN ARCHITECTURE</span>
+      <span class="chapter">DESIGN <i></i> 06</span>
+    </div>
+    <h1>Kiến trúc 6 lớp Clean Architecture.<br><em>Tách biệt tuyệt đối trách nhiệm.</em></h1>
+    <div class="content">
+      <div class="module-layout">
+        <div class="folder-tree reveal">
+          <div class="tree-root">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 14h38v25H5zM5 14V8h15l5 6"/></svg>
+            <b>StockVision Architecture (L0 → L5)</b>
+          </div>
+          <div class="tree-line"><span>├─</span><b>L5 Presentation:</b><small>notebooks/ · src/pipeline.py</small></div>
+          <div class="tree-line"><span>├─</span><b>L4 Evaluation:</b><small>metrics USD · xuất 9 biểu đồ</small></div>
+          <div class="tree-line"><span>├─</span><b>L3 Inference:</b><small>single-step · recursive & direct</small></div>
+          <div class="tree-line"><span>├─</span><b>L2 Modeling:</b><small>LSTM · LR · ARIMA · CNN · Optuna</small></div>
+          <div class="tree-line"><span>├─</span><b>L1 Data:</b><small>yfinance · ADF test · split · scale</small></div>
+          <div class="tree-line"><span>└─</span><b>L0 Foundation:</b><small>config.yaml · utils · provenance</small></div>
+        </div>
+        <div class="module-notes">
+          <div class="module-item reveal" data-live>
+            <b>L1 DATA & L2 MODELING</b>
+            <p>L1 chống leakage (fit scaler train-only, ADF).<br>L2 chứa LSTM, baselines & Optuna tuning GPU.</p>
+          </div>
+          <div class="module-item reveal" data-live>
+            <b>L3 INFERENCE & L4 EVAL</b>
+            <p>L3 suy luận đa bước (recursive vs direct).<br>L4 tính metrics USD độc lập (cấm import ngược L2).</p>
+          </div>
+          <div class="module-item reveal" data-live>
+            <b>L5 PRESENTATION</b>
+            <p>Notebook demo chỉ gọi module qua API mỏng,<br>tách rời hoàn toàn khỏi mã nguồn thuật toán.</p>
+          </div>
+        </div>
+      </div>
+      <p class="bottom-note reveal">Nguyên tắc cốt lõi: Nhóm tổ chức code theo Clean Architecture, tách biệt tuyệt đối giữa data (L1), model (L2), inference (L3) và eval (L4) để code không bị rối và dễ kiểm thử.</p>
+    </div>
+    <aside class="notes">Nhóm thiết kế hệ thống theo chuẩn Clean Architecture phân tầng 6 lớp: L0 quản lý cấu hình, L1 tiền xử lý dữ liệu, L2 mô hình và Optuna tuning, L3 động cơ suy luận, L4 đánh giá và xuất biểu đồ, và L5 là tầng giao tiếp demo. Các lớp độc lập một chiều, đảm bảo code sạch sẽ, không bị rối và cực kỳ dễ kiểm thử.</aside>
+    <footer class="slide-footer">
+      <span>NVDA / THIẾT KẾ KỸ THUẬT · DEFINE & DESIGN</span>
+      <span>2:45–3:10 <b>06 / 10</b></span>
+    </footer>
+  </section>
+
+  <!-- SLIDE 7 -->
+  <section class="slide slide-7" data-duration="35" aria-label="Slide 7">
+    <div class="slide-top">
+      <span class="eyebrow">DESIGN / 07 · LUỒNG DỮ LIỆU KHÉP KÍN</span>
+      <span class="chapter">DESIGN <i></i> 07</span>
+    </div>
+    <h1>Luồng dữ liệu.<br><em>Từ API đến Báo cáo.</em></h1>
+    <div class="content">
+      <div class="training-layout">
+        <div class="phase-timeline">
+          <div class="phase reveal" data-live>
+            <b class="phase-num">01</b>
+            <div><span>INGESTION</span><h3>Yahoo Finance → Tải 5 năm nến ngày → Lưu cache CSV</h3></div>
+          </div>
+          <div class="phase reveal" data-live>
+            <b class="phase-num">02</b>
+            <div><span>ANTI-LEAKAGE</span><h3>Chia 70/15/15 tuần tự → Fit MinMaxScaler chỉ trên Train</h3></div>
+          </div>
+          <div class="phase reveal" data-live>
+            <b class="phase-num">03</b>
+            <div><span>WINDOWING</span><h3>Cắt trượt 60 ngày → 5 ngày → Đóng gói PyTorch DataLoader</h3></div>
+          </div>
+          <div class="phase reveal" data-live>
+            <b class="phase-num">04</b>
+            <div><span>BENCHMARK</span><h3>Huấn luyện 4 mô hình → Inverse Scale USD → Báo cáo</h3></div>
+          </div>
+        </div>
+        <div class="artifact reveal">
+          <div>
+            <div class="artifact-icon">
+              <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 14h38v25H5zM5 14V8h15l5 6"/></svg>
+            </div>
+            <span class="section-tag">RUN ARTIFACTS</span>
+            <h3>Một gói lưu vết.<br>Tái lập 100%.</h3>
+            <ul>
+              <li>best_model.pt</li>
+              <li>scaler_params.json</li>
+              <li>metrics_summary.json</li>
+              <li>Đồ thị dự đoán PNG</li>
+            </ul>
+          </div>
+          <div class="artifact-scan"></div>
+        </div>
+      </div>
+      <div class="ribbon reveal">
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 24 10 10L40 13"/></svg>
+        <span>Quy trình khép kín: Dữ liệu tải 1 lần dùng mãi mãi qua cache; lưu vết đầy đủ sau mỗi lần chạy.</span>
+      </div>
+    </div>
+    <aside class="notes">Luồng dữ liệu gồm 4 chặng: bắt đầu kéo nến từ Yahoo Finance và lưu cache CSV; chặng hai chia tập thời gian và fit scaler độc lập; chặng ba cắt cửa sổ trượt đóng gói DataLoader; chặng bốn đưa vào mô hình tính toán, đổi về tiền USD và xuất báo cáo. Mọi kết quả đều sinh ra gói artifact hoàn chỉnh để ai clone về cũng tái lập được.</aside>
+    <footer class="slide-footer">
+      <span>NVDA / THIẾT KẾ KỸ THUẬT · DEFINE & DESIGN</span>
+      <span>3:10–3:45 <b>07 / 10</b></span>
+    </footer>
+  </section>
+
+  <!-- SLIDE 8 -->
+  <section class="slide slide-8" data-duration="35" aria-label="Slide 8">
+    <div class="slide-top">
+      <span class="eyebrow">DESIGN / 08 · HAI GIAI ĐOẠN VẬN HÀNH</span>
+      <span class="chapter">DESIGN <i></i> 08</span>
+    </div>
+    <h1>Huấn luyện & Dự đoán.<br><em>Quy trình tách biệt.</em></h1>
+    <div class="content">
+      <div class="criteria-grid">
+        <article class="criteria reveal">
+          <div>
+            <div class="card-label">GIAI ĐOẠN 01 / TRAINING (HUẤN LUYỆN)</div>
+            <h3>Kiểm soát lỗi chặt chẽ</h3>
+            <ul>
+              <li><b>Sanity Check</b>: Ép overfit 1 batch nhỏ trước để diệt bug code</li>
+              <li><b>Tối ưu AdamW</b>: lr=1e-3, weight_decay=1e-2 chống học vẹt</li>
+              <li><b>CosineAnnealingLR</b>: Hạ tốc độ học êm dịu theo từng vòng</li>
+              <li><b>Early Stopping</b>: Tự ngắt nếu 10 epochs Val không cải thiện</li>
+              <li>Lưu phiên bản xuất sắc nhất vào <code>best_model.pt</code></li>
+            </ul>
+          </div>
+        </article>
+        <article class="criteria success reveal">
+          <div>
+            <div class="card-label">GIAI ĐOẠN 02 / INFERENCE (DỰ ĐOÁN)</div>
+            <h3>Chạy nhanh, không học lại</h3>
+            <ul>
+              <li>Nạp tệp trọng số đã lưu <code>best_model.pt</code></li>
+              <li>Đưa chuỗi 60 ngày giá gần nhất vào mô hình</li>
+              <li>Chế độ <code>torch.no_grad()</code> tính toán siêu tốc</li>
+              <li>Dùng <code>scaler.inverse_transform</code> đổi về tiền USD</li>
+              <li>Xuất dải giá 5 ngày tiếp theo và vẽ đồ thị nối tiếp</li>
+            </ul>
+          </div>
+        </article>
+      </div>
+    </div>
+    <aside class="notes">Hệ thống tách rõ 2 giai đoạn: Huấn luyện bắt buộc có bước Sanity check overfit trên 1 batch trước để phát hiện lỗi kiến trúc sớm, dùng AdamW và Early stopping phanh tự động khi mô hình học vẹt. Giai đoạn dự đoán chỉ nạp checkpoint tốt nhất, nhận 60 ngày gần nhất và tính toán một lượt để xuất 5 ngày giá USD mà không cần train lại.</aside>
+    <footer class="slide-footer">
+      <span>NVDA / THIẾT KẾ KỸ THUẬT · DEFINE & DESIGN</span>
+      <span>3:45–4:15 <b>08 / 10</b></span>
+    </footer>
+  </section>
+
+  <!-- SLIDE 9 -->
+  <section class="slide slide-9" data-duration="25" aria-label="Slide 9">
+    <div class="slide-top">
+      <span class="eyebrow">DESIGN / 09 · CỘT MỐC & QUẢN TRỊ RỦI RO</span>
+      <span class="chapter">DESIGN <i></i> 09</span>
+    </div>
+    <h1>Ba tuần triển khai &<br><em>Giải quyết rủi ro dứt điểm.</em></h1>
+    <div class="content">
+      <div class="milestone-road">
+        <div class="milestone reveal" data-live>
+          <div class="mile-no">01</div>
+          <span>TUẦN 1</span>
+          <h3>Data & Baseline</h3>
+          <p>Tải NVDA, cache CSV.<br>EDA tính dừng ADF.<br>Chạy LR và ARIMA.</p>
+        </div>
+        <div class="milestone reveal" data-live>
+          <div class="mile-no">02</div>
+          <span>TUẦN 2</span>
+          <h3>Deep Learning</h3>
+          <p>Code LSTM & 1D-CNN.<br>Sanity 1-batch test.<br>Train Early Stopping.</p>
+        </div>
+        <div class="milestone reveal" data-live>
+          <div class="mile-no">03</div>
+          <span>TUẦN 3</span>
+          <h3>Đánh giá & Bàn giao</h3>
+          <p>Test 5 ngày chi tiết.<br>Biểu đồ Actual vs Pred.<br>Hoàn tất walkthrough.</p>
+        </div>
+      </div>
+      <div class="risk-strip reveal">
+        <b>TECH RISKS</b>
+        <div><strong>Lỗi mạng API yfinance</strong><span>Cơ chế cache CSV cục bộ, chạy hoàn toàn offline.</span></div>
+        <div><strong>Học vẹt (Overfitting)</strong><span>Dropout 0.2 + Weight decay + Early stopping.</span></div>
+        <div><strong>Tích tụ sai số đa bước</strong><span>Direct multi-output 5 ngày thay vì đoán dây chuyền.</span></div>
+      </div>
+      <div class="ribbon reveal">
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 24 10 10L40 13"/></svg>
+        <span>Kế hoạch 3 tuần rõ ràng: Đi từ dữ liệu, mô hình baseline, mô hình học sâu đến nghiệm thu thực tế.</span>
+      </div>
+    </div>
+    <aside class="notes">Kế hoạch triển khai gói gọn trong 3 tuần: Tuần một làm dữ liệu, EDA và dựng baseline. Tuần hai xây dựng LSTM, 1D-CNN và huấn luyện. Tuần ba đánh giá đa bước chi tiết và đóng gói bàn giao. Bốn rủi ro lớn gồm lỗi mạng API, overfitting, tích tụ sai số và rò rỉ dữ liệu đều có giải pháp kỹ thuật phòng ngừa triệt để.</aside>
+    <footer class="slide-footer">
+      <span>NVDA / THIẾT KẾ KỸ THUẬT · DEFINE & DESIGN</span>
+      <span>4:15–4:40 <b>09 / 10</b></span>
+    </footer>
+  </section>
+
+  <!-- SLIDE 10 -->
+  <section class="slide slide-10" data-duration="20" aria-label="Slide 10">
+    <div class="slide-top">
+      <span class="eyebrow">SUMMARY / 10 · TỔNG KẾT & HỎI ĐÁP</span>
+      <span class="chapter">SUMMARY <i></i> 10</span>
+    </div>
+    <h1>Tổng kết đề tài &<br><em>Sẵn sàng trao đổi (Q&A).</em></h1>
+    <div class="content">
+      <div class="criteria-grid">
+        <article class="criteria success reveal">
+          <div>
+            <div class="card-label">01 / TỔNG KẾT ĐỀ TÀI</div>
+            <h3>Ba thông điệp cốt lõi</h3>
+            <ul>
+              <li><b>Bài toán thực tế</b>: Dự báo dải giá 5 ngày liên tiếp cho cổ phiếu NVDA phục vụ kế hoạch giao dịch tuần.</li>
+              <li><b>Kỷ luật dữ liệu</b>: 100% không rò rỉ thông tin (No Leakage), scaler fit-on-train và chia tập theo thời gian.</li>
+              <li><b>So sánh sòng phẳng</b>: Kiểm chứng thực tế xem Deep Learning có thắng được toán thống kê truyền thống hay không.</li>
+            </ul>
+          </div>
+          <div class="split-strip">
+            <span>60 NGÀY QUAN SÁT</span>
+            <span>4 MÔ HÌNH ĐỐI CHỨNG</span>
+            <span>5 NGÀY DỰ BÁO USD</span>
+          </div>
+        </article>
+        <article class="qa-card reveal">
+          <div class="card-label">02 / HỎI ĐÁP & PHẢN BIỆN</div>
+          <h2>Cảm ơn Thầy Cô<br>& Hội Đồng!</h2>
+          <p>Nhóm nghiên cứu sẵn sàng lắng nghe nhận xét<br>và trả lời các câu hỏi phản biện.</p>
+        </article>
+      </div>
+    </div>
+    <aside class="notes">Tóm lại, đề tài giải quyết bài toán dự báo 5 ngày thiết thực cho NVDA, tuân thủ kỷ luật dữ liệu nghiêm ngặt và so sánh công bằng giữa thống kê với học sâu. Em xin kết thúc bài báo cáo tại đây và rất mong nhận được câu hỏi phản biện từ thầy cô. Em xin cảm ơn!</aside>
+    <footer class="slide-footer">
+      <span>NVDA / ĐẶC TẢ ĐỀ TÀI · DEFINE & DESIGN</span>
+      <span>4:40–5:00 <b>10 / 10</b></span>
+    </footer>
+  </section>
+
+</main>
+
+<div id="progress"></div>
+
+<nav id="toolbar" aria-label="Điều khiển trình bày">
+  <span id="count" aria-live="polite">SLIDE 01 / 10</span>
+  <div class="navigation">
+    <button id="prev" aria-label="Slide trước">←</button>
+    <div id="dots" aria-label="Chọn slide"></div>
+    <button id="next" aria-label="Slide tiếp">→</button>
+  </div>
+  <div class="tools">
+    <button id="replay" title="Chạy lại hiệu ứng (R)">↻ Hiệu ứng</button>
+    <button id="fullscreen" title="Toàn màn hình (F)">⛶ Toàn màn hình</button>
+  </div>
+</nav>
+
+<script src="assets/presentation.js"></script>
+</body>
+</html>

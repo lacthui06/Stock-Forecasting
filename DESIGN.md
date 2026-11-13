@@ -1,6 +1,6 @@
 # StockVision — Software Design Specification
 
-Thiết kế triển khai Python (.py). Nguồn yêu cầu: [DEFINE.md](DEFINE.md). Cập nhật: 2026-11-13. Thiết kế không phải bằng chứng code đã triển khai hoặc model đã kiểm chứng.
+Thiết kế kiến trúc và kỹ thuật triển khai Python (.py). Nguồn yêu cầu chuẩn: [DEFINE.md](DEFINE.md). Cập nhật: 2026-11-13.
 
 **Confirmed:** human đã duyệt trong DEFINE hoặc thảo luận. **Proposed:** thiết kế mới chờ duyệt. **TBD:** còn cần quyết định hoặc kiểm chứng. Các chữ ký/schema chưa được duyệt riêng vẫn Proposed. F/E/D dẫn ID trong DEFINE; DD là quyết định thiết kế. Mọi dẫn chiếu §... không ghi tên tài liệu đều chỉ mục của DEFINE; số mục nội bộ DESIGN luôn ghi rõ 'mục'.
 
@@ -10,26 +10,31 @@ Thiết kế triển khai Python (.py). Nguồn yêu cầu: [DEFINE.md](DEFINE.m
 
 ### 1.1. Phong cách kiến trúc
 
-**Layered batch pipeline (kiến trúc phân lớp, xử lý theo lô)** với artifact trung gian trên đĩa. Lý do:
+**Layered batch pipeline kết hợp nguyên tắc kiến trúc phần mềm sạch (Clean Architecture)** phân tầng 6 lớp ($L0 \to L5$) với artifact trung gian trên đĩa.
+
+> **Tuyên ngôn kiến trúc cốt lõi:** Nhóm tổ chức code theo nguyên tắc thiết kế phần mềm sạch (Clean Architecture), tách biệt tuyệt đối giữa xử lý dữ liệu ($L1$), mô hình ($L2$), dự báo ($L3$) và đánh giá ($L4$) để code không bị rối và dễ kiểm thử độc lập (unit test).
+
+Lý do lựa chọn kiến trúc:
 
 | Yêu cầu | Cách kiến trúc đáp ứng |
 |---|---|
+| Tách biệt trách nhiệm | Mỗi tầng chỉ làm đúng một nhiệm vụ; $L4$ (Evaluation) chỉ đọc file CSV kết quả, không import ngược code huấn luyện $L2$ |
 | Dữ liệu ngày, quy mô nhỏ, chạy theo lô | Không cần service, queue hay database sản phẩm (§6.2 cấm thêm dịch vụ DB) |
 | Chống leakage | Mỗi stage nhận đầu vào tường minh; `datasets.splitting` là nơi duy nhất sinh biên thời gian |
 | Truy vết, tái lập | Mọi stage ghi artifact + provenance vào thư mục run |
-| Notebook chỉ gọi module | Lớp trình diễn nằm trên cùng, không chứa logic |
-| Hai môi trường (local, Kaggle) | Đường dẫn qua config, không hardcode |
+| Notebook chỉ gọi module | Lớp trình diễn nằm trên cùng ($L5$), chỉ gọi API của các tầng dưới, không chứa logic thuật toán |
+| Hai môi trường (local, Kaggle) | Đường dẫn qua config, chạy heavy training & Optuna tuning trên Kaggle GPU, demo nhẹ nhàng trên Local |
 
 ### 1.2. Các lớp và trách nhiệm
 
-| Lớp | Package | Trách nhiệm | Phụ thuộc được phép |
-|---|---|---|---|
-| L5 Presentation | `notebooks/`, `src/pipeline.py` | Gọi hàm, hiển thị; không chứa thuật toán | L1–L4 |
-| L4 Evaluation | `src/evaluation/` | Metrics, căn chỉnh, so sánh, biểu đồ | L1, dữ liệu CSV từ predict |
-| L3 Inference | `src/predict/` | Single/Recursive/Direct, backtest rolling-origin, future forecast | L1, L2, `datasets` |
-| L2 Modeling | `src/models/`, `src/training/` | Kiến trúc, baseline, vòng huấn luyện, Optuna, checkpoint | L1, `datasets` |
-| L1 Data | `src/datasets/` | Collection, validation, EDA, cleaning, split, scale, window | `utils` |
-| L0 Foundation | `src/utils/`, `config/` | Config, logging, IO, hash, provenance, seed, lỗi, helper vẽ | (không) |
+| Lớp | Package | Trách nhiệm | Phụ thuộc được phép | Phân cấp tính năng |
+|---|---|---|---|---|
+| L5 Presentation | `notebooks/`, `src/pipeline.py` | Gọi hàm, hiển thị; không chứa thuật toán | L1–L4 | Cơ bản (F10) |
+| L4 Evaluation | `src/evaluation/` | Metrics USD, căn chỉnh ngày, so sánh, xuất 9 biểu đồ | L1, dữ liệu CSV từ predict | Cơ bản (F05, F06) |
+| L3 Inference | `src/predict/` | Single-step (Cơ bản), Recursive & Direct (Mở rộng), backtest rolling-origin | L1, L2, `datasets` | Single-step: Cơ bản; Multi-step (F07): Mở rộng |
+| L2 Modeling | `src/models/`, `src/training/` | LSTM, Baseline (LR, ARIMA), vòng huấn luyện, Optuna tuning, checkpoint | L1, `datasets` | LSTM/Baselines/Optuna: Cơ bản; 1D-CNN (F08): Mở rộng |
+| L1 Data | `src/datasets/` | Collection, validation, EDA kiểm định ADF, split, scale, window | `utils` | Cơ bản (F01, F02) |
+| L0 Foundation | `src/utils/`, `config/` | Config, logging, IO, hash, provenance, seed, lỗi, helper vẽ | (không) | Cơ bản (Nền tảng) |
 
 **Quy tắc phụ thuộc (một chiều):** `utils ← datasets ← models ← training ← predict`; `evaluation` chỉ đọc bảng prediction và chuỗi Close nên **không import `models`/`training`**. Không có phụ thuộc vòng. `tests/` được import tất cả.
 
@@ -762,7 +767,7 @@ Ghi chú: M3 gồm điểm dừng **human review** (không tự động qua). Co
 | R-13 | **Không tái lập** (GPU nondeterminism, thay đổi phiên bản) | Medium | Medium | Medium | Seed, deterministic warn-only, env snapshot, tolerance | Ghi giới hạn; so sánh trong tolerance | MOD-FOUND |
 | R-14 | **Checkpoint/artifact thiếu hoặc hỏng** khi chuyển Kaggle ↔ local | Medium | Medium | Medium | Hash checkpoint; `ArtifactMissingError`; manifest | Chạy lại stage thiếu từ snapshot/config | MOD-TRAIN, Notebook |
 | R-15 | **Artifact lớn/dữ liệu bị commit nhầm** | Low | Medium | Low | `.gitignore`; checklist commit | Xóa khỏi lịch sử theo hướng dẫn riêng (cần yêu cầu rõ) | Repo |
-| R-16 | **Hiểu nhầm kết quả như khuyến nghị đầu tư** | Medium | Medium | Medium | Ghi giới hạn trong notebook/biểu đồ; không có tín hiệu mua/bán | Bổ sung cảnh báo | MOD-EVAL, Notebook |
+| R-16 | **Hiểu nhầm phạm vi nghiên cứu** | Medium | Medium | Medium | Ghi rõ phạm vi nghiên cứu thực nghiệm học máy trong notebook/biểu đồ; không có tín hiệu mua/bán | Bổ sung phần chú thích phạm vi | MOD-EVAL, Notebook |
 
 Rủi ro bảo mật: không có xác thực hay dữ liệu nhạy cảm; cần rà secrets, dependency và artifact tin cậy; không claim chỉ có một rủi ro. Không load artifact không rõ nguồn; kiểm hash và cấu hình trước nạp.
 
